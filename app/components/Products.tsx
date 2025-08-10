@@ -249,8 +249,9 @@ export default function Products() {
       </div>
 
       {showModal && selectedProduct && (
+        <section className="min-h-screen bg-white">
         <div className="fixed inset-0 bg-white bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-200 relative">
             {/* Close Button - ย้ายเข้ามาใน container */}
             <button
               onClick={() => setShowModal(false)}
@@ -363,14 +364,15 @@ export default function Products() {
                 เพิ่มลงในตะกร้า
               </button>
 
-              {(!selectedColor || !selectedWrapping) && (
+              {/* {(!selectedColor || !selectedWrapping) && (
                 <p className="text-red-500 text-sm mt-3 text-center">
                   กรุณาเลือกสีและกระดาษห่อ
                 </p>
-              )}
+              )} */}
             </div>
           </div>
         </div>
+        </section>
       )}
     </div>
   );
