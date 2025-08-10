@@ -11,11 +11,12 @@ type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { status }: UpdateOrderRequest = await request.json();
-    const orderId = params.id;
+    const resolvedParams = await params; // Resolve the Promise
+    const orderId = resolvedParams.id;
 
     // Validate status
     const validStatuses: OrderStatus[] = ['pending', 'confirmed', 'completed', 'cancelled'];
