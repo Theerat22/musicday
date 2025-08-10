@@ -249,8 +249,8 @@ export default function Products() {
       </div>
 
       {showModal && selectedProduct && (
-        <div className="fixed inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-200 relative">
+        <div className="fixed inset-0 bg-white bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             {/* Close Button - ย้ายเข้ามาใน container */}
             <button
               onClick={() => setShowModal(false)}
