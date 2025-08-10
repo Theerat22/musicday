@@ -7,7 +7,7 @@ export default function Home() {
       <Products />
       <footer className="bg-blue-950 p-1">
         <p className="text-center p-3 text-white">
-          &copy; 2025 Music Day. สิทธาทำเว็ปเองจ้า
+          &copy; CD Student Council 2025
         </p>
       </footer>
     </section>
