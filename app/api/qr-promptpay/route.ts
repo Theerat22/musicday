@@ -4,7 +4,6 @@ import QRCode from "qrcode";
 
 export async function POST(req: Request) {
   try {
-    // แก้ไขให้รับ totalPrice แทน amount
     const { totalPrice } = await req.json();
     const phoneNumber = '004999219455663';
     
