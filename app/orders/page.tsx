@@ -21,7 +21,7 @@ interface Order {
   nickname: string;
   grade: string;
   total_price: number;
-  slip_image_path: string | null;
+  slip_image_url: string | null;
   order_date: string;
   status: "pending" | "confirmed" | "completed" | "cancelled";
   created_at: string;
@@ -522,14 +522,14 @@ const AdminOrdersPage = () => {
                     </div>
                   </div>
 
-                  {selectedOrder.slip_image_path && (
+                  {selectedOrder.slip_image_url && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-3">
                         สลิปการโอนเงิน
                       </h3>
                       <div className="border border-gray-200 rounded-lg overflow-hidden">
                         <Image
-                          src={selectedOrder.slip_image_path}
+                          src={selectedOrder.slip_image_url}
                           alt="Payment slip"
                           width={150}
                           height={150}
