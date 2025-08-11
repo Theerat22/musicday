@@ -1,6 +1,6 @@
 "use client";
-import { useState, useCallback, useMemo } from "react";
-import { X, Upload, Check } from "lucide-react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { X, Upload, Check, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 interface CartItem {
@@ -45,22 +45,26 @@ export default function OrderForm({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  // ป้องกัน re-render ที่ไม่จำเป็น - ต้องอยู่ก่อน early return
-  const handleFormChange = useCallback((
-    field: keyof OrderFormData,
-    value: string | File | null
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  }, []);
+  const handleFormChange = useCallback(
+    (field: keyof OrderFormData, value: string | File | null) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    },
+    []
+  );
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    handleFormChange("slipImage", file);
-  }, [handleFormChange]);
+  const handleFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0] || null;
+      handleFormChange("slipImage", file);
+    },
+    [handleFormChange]
+  );
 
   const handleSubmitOrder = useCallback(async () => {
     if (
@@ -95,7 +99,7 @@ export default function OrderForm({
         const result = await response.json();
         setOrderSuccess(true);
         console.log("Order submitted successfully:", result);
-        
+
         setFormData({
           firstName: "",
           lastName: "",
@@ -120,28 +124,80 @@ export default function OrderForm({
     }
   }, [formData, cart, totalPrice, onSuccess, onClose]);
 
-  // Memoize QR Code component
-  const QRCodeDisplay = useMemo(() => (
-    <div className="bg-gray-50 p-6 rounded-lg text-center mb-6">
-      <h4 className="text-lg font-medium mb-4 text-black">
-        สแกน QR Code เพื่อชำระเงิน
-      </h4>
-      <div className="flex flex-col items-center justify-center">
-        <div className="w-[200px] h-[200px] bg-gray-200 flex items-center justify-center">
-          <Image 
-            src="/qr-promptpay.JPG" 
-            alt="QR Code" 
-            width={200} 
-            height={200}
-            className="object-contain"
-          />
+  const generateQR = async (totalPrice: number) => {
+    setQrCodeUrl("");
+    setIsGeneratingQR(true);
+    try {
+      console.log(totalPrice);
+      const res = await fetch("/api/qr-promptpay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ totalPrice }),
+      });
+
+      const data = await res.json();
+
+      if (data.qrCodeDataUrl) {
+        setQrCodeUrl(data.qrCodeDataUrl);
+      } else {
+        // alert(data.error || "เกิดข้อผิดพลาด");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("เกิดข้อผิดพลาดในการสร้าง QR Code");
+    } finally {
+      setIsGeneratingQR(false);
+    }
+  };
+
+  useEffect(() => {
+    generateQR(totalPrice);
+  }, [totalPrice]);
+
+  // console.log(qrCodeUrl);
+
+  const QRCodeDisplay = useMemo(
+    () => (
+      <div className="bg-gray-50 p-6 rounded-lg text-center mb-6">
+        <h4 className="text-lg font-medium mb-4 text-black">
+          สแกน QR Code เพื่อชำระเงิน
+        </h4>
+        <div className="flex flex-col items-center justify-center">
+          <div className="w-[200px] h-[200px] bg-gray-200 flex items-center justify-center">
+            {isGeneratingQR ? (
+              <div className="flex flex-col items-center">
+                <Loader2 className="animate-spin text-gray-400 mb-2" size={32} />
+                <p className="text-gray-500 text-sm">กำลังสร้าง QR Code...</p>
+              </div>
+            ) : qrCodeUrl ? (
+              <Image
+                src={qrCodeUrl}
+                alt="QR Code"
+                width={200}
+                height={200}
+                className="object-contain"
+              />
+            ) : (
+              <div className="text-gray-500 text-sm">
+                ไม่สามารถโหลด QR Code ได้
+              </div>
+            )}
+          </div>
         </div>
+        <p className="text-lg text-gray-600 mt-1">
+          ชื่อบัญชี :{" "}
+          <span className="font-bold">น.ส.สุภณี ซะโยะโกะ แสนสุข</span>
+        </p>
+        <p className="text-lg text-gray-600 ">
+          ยอดรวม:{" "}
+          <span className="font-bold">
+            ฿{totalPrice.toLocaleString("th-TH")}
+          </span>
+        </p>
       </div>
-      <p className="text-lg text-gray-600 mt-15">
-        ยอดรวม: <span className="font-bold">฿{totalPrice.toLocaleString("th-TH")}</span>
-      </p>
-    </div>
-  ), [totalPrice]);
+    ),
+    [qrCodeUrl, totalPrice, isGeneratingQR]
+  );
 
   // Early return ต้องอยู่หลัง hooks ทั้งหมด
   if (!show) return null;
@@ -187,7 +243,9 @@ export default function OrderForm({
                     <input
                       type="text"
                       value={formData.firstName}
-                      onChange={(e) => handleFormChange("firstName", e.target.value)}
+                      onChange={(e) =>
+                        handleFormChange("firstName", e.target.value)
+                      }
                       className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                       placeholder="กรอกชื่อ"
                     />
@@ -199,7 +257,9 @@ export default function OrderForm({
                     <input
                       type="text"
                       value={formData.lastName}
-                      onChange={(e) => handleFormChange("lastName", e.target.value)}
+                      onChange={(e) =>
+                        handleFormChange("lastName", e.target.value)
+                      }
                       className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                       placeholder="กรอกนามสกุล"
                     />
@@ -213,7 +273,9 @@ export default function OrderForm({
                   <input
                     type="text"
                     value={formData.nickname}
-                    onChange={(e) => handleFormChange("nickname", e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("nickname", e.target.value)
+                    }
                     className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                     placeholder="กรอกชื่อเล่น"
                   />
@@ -245,7 +307,10 @@ export default function OrderForm({
                       id="slip-upload"
                     />
                     <label htmlFor="slip-upload" className="cursor-pointer">
-                      <Upload size={32} className="mx-auto text-gray-400 mb-2" />
+                      <Upload
+                        size={32}
+                        className="mx-auto text-gray-400 mb-2"
+                      />
                       <p className="text-gray-600">
                         {formData.slipImage
                           ? formData.slipImage.name
