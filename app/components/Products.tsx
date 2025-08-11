@@ -27,6 +27,7 @@ export default function Products() {
   const [showModal, setShowModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -34,6 +35,7 @@ export default function Products() {
         const response = await fetch("/api/fetchProducts");
         const data = await response.json();
         setProducts(data);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching products:", error);
       }
@@ -95,7 +97,14 @@ export default function Products() {
     setShowOrderForm(false);
   };
 
-  //   console.log(getTotalPrice());
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-white p-6 mt-1">
       <div className="max-w-6xl mx-auto">
