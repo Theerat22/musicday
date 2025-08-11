@@ -95,7 +95,7 @@ export default function Products() {
     setShowOrderForm(false);
   };
 
-//   console.log(getTotalPrice());
+  //   console.log(getTotalPrice());
   return (
     <div className="min-h-screen bg-white p-6 mt-1">
       <div className="max-w-6xl mx-auto">
@@ -176,11 +176,13 @@ export default function Products() {
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-lg font-medium">รวม</span>
                         <span className="text-2xl font-bold text-black">
-                          ฿{getTotalPrice().toLocaleString('th-TH')}
+                          ฿{getTotalPrice().toLocaleString("th-TH")}
                         </span>
-                      </div> 
-                      <button className="w-full bg-black text-white py-4 rounded-lg font-medium text-lg hover:bg-gray-800 transition-colors"
-                      onClick={handleOrderClick}>
+                      </div>
+                      <button
+                        className="w-full bg-black text-white py-4 rounded-lg font-medium text-lg hover:bg-gray-800 transition-colors"
+                        onClick={handleOrderClick}
+                      >
                         สั่งซื้อ
                       </button>
                     </div>
@@ -249,129 +251,123 @@ export default function Products() {
       </div>
 
       {showModal && selectedProduct && (
-        <section className="min-h-screen bg-white">
-        <div className="fixed inset-0 bg-white bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-200 relative">
-            {/* Close Button - ย้ายเข้ามาใน container */}
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 shadow-sm z-10 transition-colors"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Product Image Section */}
-            <div className="bg-gray-50 p-8 text-center border-b">
-              <h3 className="text-xl font-medium text-slate-800 mb-1">
-                {selectedProduct.name}
-              </h3>
-              <p className="text-2xl font-bold text-black">
-                ฿{selectedProduct.price.toLocaleString()}
-              </p>
-            </div>
-
-            <div className="p-8">
-              {/* Color Selection */}
-              <div className="mb-8">
-                <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
-                  สี
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {colors.map((color) => (
-                    <label
-                      key={color}
-                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                        selectedColor === color
-                          ? "border-black bg-gray-50"
-                          : "border-gray-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="color"
-                        value={color}
-                        checked={selectedColor === color}
-                        onChange={(e) => setSelectedColor(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                          selectedColor === color
-                            ? "border-black"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedColor === color && (
-                          <div className="w-2 h-2 bg-black rounded-full"></div>
-                        )}
-                      </div>
-                      <span className="text-slate-700 font-medium">
-                        {color}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Wrapping Selection */}
-              <div className="mb-8">
-                <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
-                  กระดาษห่อ
-                </h4>
-                <div className="space-y-3">
-                  {wrappings.map((wrapping) => (
-                    <label
-                      key={wrapping}
-                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                        selectedWrapping === wrapping
-                          ? "border-black bg-gray-50"
-                          : "border-gray-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="wrapping"
-                        value={wrapping}
-                        checked={selectedWrapping === wrapping}
-                        onChange={(e) => setSelectedWrapping(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                          selectedWrapping === wrapping
-                            ? "border-black"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedWrapping === wrapping && (
-                          <div className="w-2 h-2 bg-black rounded-full"></div>
-                        )}
-                      </div>
-                      <span className="text-slate-700 font-medium">
-                        {wrapping}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Button */}
+        <section className="fixed inset-0 z-50 overflow-y-auto bg-white bg-opacity-60">
+          <div className="min-h-full flex items-start justify-center p-4 py-12">
+            <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl border border-gray-200 relative my-8">
+              {/* Close Button */}
               <button
-                onClick={handleAddToCart}
-                disabled={!selectedColor || !selectedWrapping}
-                className="w-full bg-black text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                onClick={() => setShowModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 shadow-sm z-10 transition-colors"
               >
-                เพิ่มลงในตะกร้า
+                <X size={20} />
               </button>
 
-              {/* {(!selectedColor || !selectedWrapping) && (
-                <p className="text-red-500 text-sm mt-3 text-center">
-                  กรุณาเลือกสีและกระดาษห่อ
+              {/* Product Image Section */}
+              <div className="bg-gray-50 p-8 text-center border-b">
+                <h3 className="text-xl font-medium text-slate-800 mb-1">
+                  {selectedProduct.name}
+                </h3>
+                <p className="text-2xl font-bold text-black">
+                  ฿{selectedProduct.price.toLocaleString()}
                 </p>
-              )} */}
+              </div>
+
+              <div className="p-8">
+                {/* Color Selection */}
+                <div className="mb-8">
+                  <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                    สี
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {colors.map((color) => (
+                      <label
+                        key={color}
+                        className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          selectedColor === color
+                            ? "border-black bg-gray-50"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="color"
+                          value={color}
+                          checked={selectedColor === color}
+                          onChange={(e) => setSelectedColor(e.target.value)}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                            selectedColor === color
+                              ? "border-black"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {selectedColor === color && (
+                            <div className="w-2 h-2 bg-black rounded-full"></div>
+                          )}
+                        </div>
+                        <span className="text-slate-700 font-medium">
+                          {color}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Wrapping Selection */}
+                <div className="mb-8">
+                  <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                    กระดาษห่อ
+                  </h4>
+                  <div className="space-y-3">
+                    {wrappings.map((wrapping) => (
+                      <label
+                        key={wrapping}
+                        className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          selectedWrapping === wrapping
+                            ? "border-black bg-gray-50"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="wrapping"
+                          value={wrapping}
+                          checked={selectedWrapping === wrapping}
+                          onChange={(e) => setSelectedWrapping(e.target.value)}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                            selectedWrapping === wrapping
+                              ? "border-black"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {selectedWrapping === wrapping && (
+                            <div className="w-2 h-2 bg-black rounded-full"></div>
+                          )}
+                        </div>
+                        <span className="text-slate-700 font-medium">
+                          {wrapping}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <button
+                  onClick={handleAddToCart}
+                  disabled={!selectedColor || !selectedWrapping}
+                  className="w-full bg-black text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  เพิ่มลงในตะกร้า
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </section>
       )}
     </div>

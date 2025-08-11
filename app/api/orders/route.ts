@@ -14,13 +14,15 @@ interface CartItem {
   cartId: string;
 }
 
+// รูปแบบสั้นกว่า (12 หลัก)
 function generateOrderNumber(): string {
   const now = new Date();
   const year = now.getFullYear().toString().slice(-2);
   const month = (now.getMonth() + 1).toString().padStart(2, "0");
   const day = now.getDate().toString().padStart(2, "0");
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-  return `MD${year}${month}${day}${random}`;
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");  
+  return `MD${year}${month}${day}${hours}${minutes}`;
 }
 
 async function saveFile(file: File): Promise<string> {

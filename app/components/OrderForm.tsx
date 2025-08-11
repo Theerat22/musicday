@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { X, Upload, Check } from "lucide-react";
 import Image from "next/image";
 
@@ -47,9 +46,8 @@ export default function OrderForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
-  if (!show) return null;
-
-  const handleFormChange = (
+  // ป้องกัน re-render ที่ไม่จำเป็น - ต้องอยู่ก่อน early return
+  const handleFormChange = useCallback((
     field: keyof OrderFormData,
     value: string | File | null
   ) => {
@@ -57,14 +55,14 @@ export default function OrderForm({
       ...prev,
       [field]: value,
     }));
-  };
+  }, []);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     handleFormChange("slipImage", file);
-  };
+  }, [handleFormChange]);
 
-  const handleSubmitOrder = async () => {
+  const handleSubmitOrder = useCallback(async () => {
     if (
       !formData.firstName ||
       !formData.lastName ||
@@ -77,9 +75,7 @@ export default function OrderForm({
     }
 
     setIsSubmitting(true);
-
     try {
-      // สร้าง FormData สำหรับส่งไฟล์
       const formDataToSend = new FormData();
       formDataToSend.append("firstName", formData.firstName);
       formDataToSend.append("lastName", formData.lastName);
@@ -90,9 +86,6 @@ export default function OrderForm({
       formDataToSend.append("totalPrice", totalPrice.toString());
       formDataToSend.append("orderDate", new Date().toISOString());
 
-      console.log(formDataToSend);
-
-      // ส่งข้อมูลไปยัง API
       const response = await fetch("/api/orders", {
         method: "POST",
         body: formDataToSend,
@@ -102,9 +95,7 @@ export default function OrderForm({
         const result = await response.json();
         setOrderSuccess(true);
         console.log("Order submitted successfully:", result);
-
-
-        // Reset form
+        
         setFormData({
           firstName: "",
           lastName: "",
@@ -113,7 +104,6 @@ export default function OrderForm({
           slipImage: null,
         });
 
-        // แสดงข้อความสำเร็จ
         setTimeout(() => {
           onSuccess();
           onClose();
@@ -128,38 +118,51 @@ export default function OrderForm({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [formData, cart, totalPrice, onSuccess, onClose]);
 
-  // QR Code component (placeholder - ใช้ QR code จริงของคุณ)
-  const QRCodeDisplay = () => (
+  // Memoize QR Code component
+  const QRCodeDisplay = useMemo(() => (
     <div className="bg-gray-50 p-6 rounded-lg text-center mb-6">
       <h4 className="text-lg font-medium mb-4 text-black">
         สแกน QR Code เพื่อชำระเงิน
       </h4>
       <div className="flex flex-col items-center justify-center">
-        <Image src="/qr-promptpay.JPG" alt="QR Code" width={200} height={200} />
+        <div className="w-[200px] h-[200px] bg-gray-200 flex items-center justify-center">
+          <Image 
+            src="/qr-promptpay.JPG" 
+            alt="QR Code" 
+            width={200} 
+            height={200}
+            className="object-contain"
+          />
+        </div>
       </div>
-      <p className="text-sm text-gray-600 mt-4">
+      <p className="text-lg text-gray-600 mt-15">
         ยอดรวม: <span className="font-bold">฿{totalPrice.toLocaleString("th-TH")}</span>
       </p>
     </div>
-  );
+  ), [totalPrice]);
+
+  // Early return ต้องอยู่หลัง hooks ทั้งหมด
+  if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-white bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="p-6 border-b bg-white">
+    <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header - ความสูงคงที่ */}
+        <div className="sticky top-0 p-6 border-b bg-white z-10">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-black">ข้อมูลการสั่งซื้อ</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 p-2"
+              className="text-gray-400 hover:text-gray-600 p-2 transition-colors"
             >
               <X size={24} />
             </button>
           </div>
         </div>
 
+        {/* Content */}
         <div className="p-6">
           {orderSuccess ? (
             <div className="text-center py-8">
@@ -172,7 +175,7 @@ export default function OrderForm({
           ) : (
             <>
               {/* QR Code Section */}
-              <QRCodeDisplay />
+              {QRCodeDisplay}
 
               {/* Form Fields */}
               <div className="space-y-4">
@@ -184,10 +187,8 @@ export default function OrderForm({
                     <input
                       type="text"
                       value={formData.firstName}
-                      onChange={(e) =>
-                        handleFormChange("firstName", e.target.value)
-                      }
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:border-black focus:outline-none"
+                      onChange={(e) => handleFormChange("firstName", e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                       placeholder="กรอกชื่อ"
                     />
                   </div>
@@ -198,10 +199,8 @@ export default function OrderForm({
                     <input
                       type="text"
                       value={formData.lastName}
-                      onChange={(e) =>
-                        handleFormChange("lastName", e.target.value)
-                      }
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:border-black focus:outline-none"
+                      onChange={(e) => handleFormChange("lastName", e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                       placeholder="กรอกนามสกุล"
                     />
                   </div>
@@ -214,10 +213,8 @@ export default function OrderForm({
                   <input
                     type="text"
                     value={formData.nickname}
-                    onChange={(e) =>
-                      handleFormChange("nickname", e.target.value)
-                    }
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:border-black focus:outline-none"
+                    onChange={(e) => handleFormChange("nickname", e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                     placeholder="กรอกชื่อเล่น"
                   />
                 </div>
@@ -230,8 +227,8 @@ export default function OrderForm({
                     type="text"
                     value={formData.grade}
                     onChange={(e) => handleFormChange("grade", e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:border-black focus:outline-none"
-                    placeholder="เช่น ม.4/1"
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                    placeholder="เช่น 4/1"
                   />
                 </div>
 
@@ -239,7 +236,7 @@ export default function OrderForm({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     อัปโหลดสลิปการโอนเงิน *
                   </label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors">
+                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors min-h-[120px] flex flex-col justify-center">
                     <input
                       type="file"
                       accept="image/*"
@@ -248,10 +245,7 @@ export default function OrderForm({
                       id="slip-upload"
                     />
                     <label htmlFor="slip-upload" className="cursor-pointer">
-                      <Upload
-                        size={32}
-                        className="mx-auto text-gray-400 mb-2"
-                      />
+                      <Upload size={32} className="mx-auto text-gray-400 mb-2" />
                       <p className="text-gray-600">
                         {formData.slipImage
                           ? formData.slipImage.name
@@ -269,7 +263,7 @@ export default function OrderForm({
               <button
                 onClick={handleSubmitOrder}
                 disabled={isSubmitting}
-                className="w-full bg-blue-950 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors mt-6"
+                className="w-full bg-blue-950 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors mt-6"
               >
                 {isSubmitting ? "กำลังส่ง..." : "ส่งคำสั่งซื้อ"}
               </button>
