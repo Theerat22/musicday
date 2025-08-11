@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { mysqlPool } from "@/utils/db";
-import fs from "fs";
+import { writeFile } from "fs/promises";
+import { mkdir } from "fs/promises";
 import path from "path";
 import type { ResultSetHeader } from "mysql2";
 
@@ -26,23 +27,34 @@ function generateOrderNumber(): string {
 }
 
 async function saveFile(file: File): Promise<string> {
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "slips");
+  const uploadDir = process.env.NODE_ENV === 'production' 
+    ? "/tmp" 
+    : path.join(process.cwd(), "public", "uploads", "slips");
 
-  // สร้างโฟลเดอร์ถ้ายังไม่มี
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  try {
+    // สร้างโฟลเดอร์ถ้ายังไม่มี (สำหรับ development)
+    if (process.env.NODE_ENV !== 'production') {
+      await mkdir(uploadDir, { recursive: true });
+    }
+
+    // สร้างชื่อไฟล์ใหม่
+    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const filePath = path.join(uploadDir, fileName);
+
+    // แปลง File เป็น Buffer และบันทึก
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    await writeFile(filePath, buffer);
+
+    // Return different paths based on environment
+    return process.env.NODE_ENV === 'production' 
+      ? filePath  // Full path for production
+      : `/uploads/slips/${fileName}`; // Relative path for development
+
+  } catch (error) {
+    console.error('File save error:', error);
+    throw new Error('Failed to save file');
   }
-
-  // สร้างชื่อไฟล์ใหม่
-  const fileName = `${Date.now()}-${file.name}`;
-  const filePath = path.join(uploadDir, fileName);
-
-  // แปลง File เป็น Buffer และบันทึก
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  fs.writeFileSync(filePath, buffer);
-
-  return `/uploads/slips/${fileName}`;
 }
 
 export async function POST(req: NextRequest) {
