@@ -159,14 +159,17 @@ export default function OrderForm({
   const QRCodeDisplay = useMemo(
     () => (
       <div className="bg-gray-50 p-6 rounded-lg text-center mb-6">
-        <h4 className="text-lg font-medium mb-4 text-black">
+        <h4 className="text-lg font-medium mb-3 text-black">
           สแกน QR Code เพื่อชำระเงิน
         </h4>
         <div className="flex flex-col items-center justify-center">
           <div className="w-[200px] h-[200px] bg-gray-200 flex items-center justify-center">
             {isGeneratingQR ? (
               <div className="flex flex-col items-center">
-                <Loader2 className="animate-spin text-gray-400 mb-2" size={32} />
+                <Loader2
+                  className="animate-spin text-gray-400 mb-2"
+                  size={32}
+                />
                 <p className="text-gray-500 text-sm">กำลังสร้าง QR Code...</p>
               </div>
             ) : qrCodeUrl ? (
@@ -184,7 +187,7 @@ export default function OrderForm({
             )}
           </div>
         </div>
-        <p className="text-lg text-gray-600 mt-1">
+        <p className="text-lg text-gray-600 mt-2">
           ชื่อบัญชี :{" "}
           <span className="font-bold">น.ส.สุภณี ซะโยะโกะ แสนสุข</span>
         </p>
@@ -298,29 +301,51 @@ export default function OrderForm({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     อัปโหลดสลิปการโอนเงิน *
                   </label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors min-h-[120px] flex flex-col justify-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="slip-upload"
-                    />
-                    <label htmlFor="slip-upload" className="cursor-pointer">
-                      <Upload
-                        size={32}
-                        className="mx-auto text-gray-400 mb-2"
+                  {formData.slipImage ? (
+                    <div className="relative border-2 border-solid border-gray-300 rounded-lg overflow-hidden">
+                      <Image
+                        src={URL.createObjectURL(formData.slipImage)}
+                        alt="Payment Slip Preview"
+                        className="w-full h-48 object-cover"
+                        width={150}
+                        height={150}
                       />
-                      <p className="text-gray-600">
-                        {formData.slipImage
-                          ? formData.slipImage.name
-                          : "คลิกเพื่อเลือกไฟล์สลิป"}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        รองรับไฟล์ JPG, PNG
-                      </p>
-                    </label>
-                  </div>
+                      <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-2">
+                        <button
+                          type="button"
+                          onClick={() => handleFormChange("slipImage", null)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-2">
+                        <p className="text-sm truncate">
+                          {formData.slipImage.name}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors min-h-[120px] flex flex-col justify-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="slip-upload"
+                      />
+                      <label htmlFor="slip-upload" className="cursor-pointer">
+                        <Upload
+                          size={32}
+                          className="mx-auto text-gray-400 mb-2"
+                        />
+                        <p className="text-gray-600">คลิกเพื่อเลือกไฟล์สลิป</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          รองรับไฟล์ JPG, PNG
+                        </p>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
 
