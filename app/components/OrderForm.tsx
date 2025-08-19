@@ -18,6 +18,7 @@ interface OrderFormData {
   lastName: string;
   nickname: string;
   grade: string;
+  number: string;
   slipImage: File | null;
 }
 
@@ -41,6 +42,7 @@ export default function OrderForm({
     lastName: "",
     nickname: "",
     grade: "",
+    number: "",
     slipImage: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -100,11 +102,38 @@ export default function OrderForm({
         setOrderSuccess(true);
         console.log("Order submitted successfully:", result);
 
+        try {
+          const emailResponse = await fetch("/api/send-email", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              nickname: formData.nickname,
+              grade: formData.grade,
+              cart: cart,
+              totalPrice: totalPrice,
+              number: formData.number,
+            }),
+          });
+
+          if (emailResponse.ok) {
+            console.log("Email sent successfully!");
+          } else {
+            console.error("Failed to send email.");
+          }
+        } catch (emailError) {
+          console.error("Error sending email:", emailError);
+        }
+
         setFormData({
           firstName: "",
           lastName: "",
           nickname: "",
           grade: "",
+          number: "",
           slipImage: null,
         });
 
@@ -284,17 +313,36 @@ export default function OrderForm({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ชั้น *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.grade}
-                    onChange={(e) => handleFormChange("grade", e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-                    placeholder="เช่น 4/1"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ชั้น *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.grade}
+                      onChange={(e) =>
+                        handleFormChange("grade", e.target.value)
+                      }
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                      placeholder="เช่น 4/1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      เลขประจำตัว (4 หลัก) *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.number}
+                      onChange={(e) =>
+                        handleFormChange("number", e.target.value)
+                      }
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                      placeholder="เช่น 5830"
+                    />
+                  </div>
                 </div>
 
                 <div>

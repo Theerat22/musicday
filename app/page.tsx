@@ -8,7 +8,7 @@ export default function Home() {
       <Products />
       <footer className="bg-blue-950 p-1">
         <p className="text-center p-3 text-white">
-          &copy; CD Student Council 2025
+          &copy; CD Student Council 2025 x ชุมนุมจัดดอกไม้ x ชุมนุม Do It Yourself
         </p>
       </footer>
     </section>
