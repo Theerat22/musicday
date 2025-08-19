@@ -3,15 +3,26 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Eye, Check, Package, X, Clock, Filter, Search, Calendar } from "lucide-react";
 import Image from "next/image";
 
+interface BouquetDetail {
+  flower_id: number;
+  flower_name: string;
+  flower_color: string;
+  flower_price: number;
+  quantity: number;
+}
+
 interface OrderItem {
   id: number;
-  product_id: number;
+  product_id: number | null;
   product_name: string;
   price: number;
   color: string;
   wrapping: string;
   cart_id: string;
+  bouquet_details: BouquetDetail[];
 }
+
+type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
 interface Order {
   id: number;
@@ -23,7 +34,7 @@ interface Order {
   total_price: number;
   slip_image_url: string | null;
   order_date: string;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status: OrderStatus;
   created_at: string;
   updated_at: string;
   items: OrderItem[];
@@ -49,7 +60,7 @@ const AdminOrdersPage = () => {
   const fetchOrders = async () => {
     try {
       const response = await fetch("/api/admin/orders");
-      const data = await response.json();
+      const data: Order[] = await response.json();
       setOrders(data);
     } catch (error) {
       console.error("Failed to fetch orders:", error);
@@ -58,7 +69,6 @@ const AdminOrdersPage = () => {
     }
   };
 
-  // Filtered orders
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       // Status filter
@@ -105,14 +115,14 @@ const AdminOrdersPage = () => {
         setOrders(
           orders.map((order) =>
             order.id === orderId
-              ? { ...order, status: newStatus as Order["status"] }
+              ? { ...order, status: newStatus as OrderStatus }
               : order
           )
         );
         if (selectedOrder && selectedOrder.id === orderId) {
           setSelectedOrder({
             ...selectedOrder,
-            status: newStatus as Order["status"],
+            status: newStatus as OrderStatus,
           });
         }
       }
@@ -130,7 +140,7 @@ const AdminOrdersPage = () => {
     setDateTo("");
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: OrderStatus) => {
     const statusConfig = {
       pending: {
         color: "bg-yellow-100 text-yellow-800",
@@ -164,13 +174,13 @@ const AdminOrdersPage = () => {
     );
   };
 
-  const getNextStatus = (currentStatus: string) => {
+  const getNextStatus = (currentStatus: OrderStatus) => {
     if (currentStatus === "pending") return "confirmed";
     if (currentStatus === "confirmed") return "completed";
     return null;
   };
 
-  const getStatusButtonText = (status: string) => {
+  const getStatusButtonText = (status: OrderStatus) => {
     if (status === "pending") return "ยืนยันสลิป";
     if (status === "confirmed") return "มารับของ";
     return null;
@@ -190,7 +200,6 @@ const AdminOrdersPage = () => {
     });
   };
 
-  // Get order counts by status
   const statusCounts = useMemo(() => {
     return orders.reduce((counts, order) => {
       counts[order.status] = (counts[order.status] || 0) + 1;
@@ -499,18 +508,32 @@ const AdminOrdersPage = () => {
                     <div className="space-y-3">
                       {selectedOrder.items?.map((item) => (
                         <div
-                          key={item.id}
+                          key={item.cart_id} // ใช้ cart_id เป็น key เพื่อให้ไม่ซ้ำกัน
                           className="bg-gray-50 p-3 rounded-lg"
                         >
                           <p className="font-medium text-sm">
                             {item.product_name}
                           </p>
                           <div className="text-xs text-gray-600 mt-1 space-y-1">
+                            <p>ราคา: ฿{formatPrice(item.price)}</p>
                             <p>สี: {item.color}</p>
                             <p>การห่อ: {item.wrapping}</p>
-                            <p className="font-medium">
-                              ฿{formatPrice(item.price)}
-                            </p>
+                            
+                            {/* แสดงรายละเอียดดอกไม้ในช่อ ถ้ามี */}
+                            {item.bouquet_details && item.bouquet_details.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <p className="font-medium text-gray-800">
+                                  รายละเอียดในช่อ:
+                                </p>
+                                <ul className="list-disc list-inside mt-1 space-y-0.5">
+                                  {item.bouquet_details.map((flower, index) => (
+                                    <li key={index} className="text-gray-600">
+                                      {flower.flower_name} x {flower.quantity}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

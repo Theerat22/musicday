@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// ========== แก้ไข Cloudinary Configuration ==========
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { mysqlPool } from "@/utils/db";
@@ -9,26 +7,36 @@ import type { ResultSetHeader } from "mysql2";
 import fs from 'fs';
 import path from "path";
 
+// ปรับปรุง CartItem Interface ให้ถูกต้องและสมบูรณ์
+interface FlowerSelection {
+  flowerId: number;
+  name: string;
+  color: string;
+  price: number | string;
+  quantity: number;
+}
+
 interface CartItem {
-  id: number;
+  id: number | null;
   name: string;
   price: number | string;
+  image: string;
+  cartId: string;
+  type?: "single" | "fresh_bouquet" | "preserved_bouquet";
+  flowers?: FlowerSelection[];
+  arrangementFee?: number;
   color: string;
   wrapping: string;
-  cartId: string;
 }
 
 // ตรวจสอบและตั้งค่า Cloudinary โดยใช้ CLOUDINARY_URL
 if (!process.env.CLOUDINARY_URL) {
   console.error('Missing CLOUDINARY_URL environment variable');
 }
-
-// Config โดยใช้ CLOUDINARY_URL
 cloudinary.config({
   cloudinary_url: process.env.CLOUDINARY_URL
 });
 
-// ตรวจสอบการเชื่อมต่อ Cloudinary
 async function testCloudinaryConnection(): Promise<boolean> {
   try {
     await cloudinary.api.ping();
@@ -50,34 +58,21 @@ function generateOrderNumber(): string {
   return `MD${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 
-// อัพโหลดไฟล์ไป Cloudinary (แก้ไขแล้ว)
 async function uploadToCloudinary(file: File): Promise<string> {
   return new Promise(async (resolve, reject) => {
     try {
-      // ตรวจสอบ configuration ก่อน
       if (!process.env.CLOUDINARY_URL) {
         reject(new Error('CLOUDINARY_URL is not set in environment variables'));
         return;
       }
-
-      console.log('Cloudinary config check:', {
-        cloudinary_url: process.env.CLOUDINARY_URL ? 'Set' : 'Not Set',
-        url_preview: process.env.CLOUDINARY_URL ? 
-          process.env.CLOUDINARY_URL.replace(/(cloudinary:\/\/[^:]*:[^@]*)@/, 'cloudinary://***:***@') : 'Not Set'
-      });
-
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder: 'order-slips',
           public_id: `slip_${Date.now()}_${Math.random().toString(36).substring(7)}`,
           resource_type: 'auto',
-          transformation: [
-            { quality: 'auto:good' },
-            { fetch_format: 'auto' }
-          ],
+          transformation: [{ quality: 'auto:good' }, { fetch_format: 'auto' }],
           invalidate: true,
           use_filename: false,
           unique_filename: true,
@@ -94,7 +89,6 @@ async function uploadToCloudinary(file: File): Promise<string> {
           }
         }
       );
-
       uploadStream.end(buffer);
     } catch (error) {
       console.error('Upload preparation error:', error);
@@ -103,26 +97,17 @@ async function uploadToCloudinary(file: File): Promise<string> {
   });
 }
 
-// ฟังก์ชัน fallback สำหรับกรณี Cloudinary ไม่พร้อมใช้งาน
 async function uploadToLocalStorage(file: File): Promise<string> {
   try {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    
-    // สร้างชื่อไฟล์
     const fileName = `slip_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
     const uploadDir = './public/uploads/slips';
-    
-    const fs = require('fs');
-    const path = require('path');
-    
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-    
     const filePath = path.join(uploadDir, fileName);
     fs.writeFileSync(filePath, buffer);
-    
     return `/uploads/slips/${fileName}`;
   } catch (error) {
     console.error('Local upload error:', error);
@@ -132,10 +117,7 @@ async function uploadToLocalStorage(file: File): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
-    // รับ FormData จาก request
     const formData = await req.formData();
-
-    // ดึงข้อมูลจาก FormData
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
     const nickname = formData.get('nickname') as string;
@@ -144,58 +126,29 @@ export async function POST(req: NextRequest) {
     const totalPriceStr = formData.get('totalPrice') as string;
     const slipImage = formData.get('slipImage') as File;
 
-    // ตรวจสอบข้อมูลที่จำเป็น
     if (!firstName || !lastName || !nickname || !grade || !cartData || !totalPriceStr) {
-      return NextResponse.json({ 
-        error: "Missing required fields",
-        details: "firstName, lastName, nickname, grade, cartData, totalPrice are required"
-      }, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields", details: "firstName, lastName, nickname, grade, cartData, totalPrice are required" }, { status: 400 });
     }
-
     if (!slipImage || slipImage.size === 0) {
-      return NextResponse.json({ 
-        error: "No slip image provided" 
-      }, { status: 400 });
+      return NextResponse.json({ error: "No slip image provided" }, { status: 400 });
     }
-
-    // ตรวจสอบชนิดไฟล์
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(slipImage.type)) {
-      return NextResponse.json({ 
-        error: "Invalid file type",
-        details: "Only JPEG, PNG, and WebP are allowed"
-      }, { status: 400 });
+      return NextResponse.json({ error: "Invalid file type", details: "Only JPEG, PNG, and WebP are allowed" }, { status: 400 });
     }
-
-    // ตรวจสอบขนาดไฟล์ (10MB)
     if (slipImage.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ 
-        error: "File size too large",
-        details: "Maximum 10MB allowed"
-      }, { status: 400 });
+      return NextResponse.json({ error: "File size too large", details: "Maximum 10MB allowed" }, { status: 400 });
     }
 
-    console.log('Processing order with slip image:', {
-      fileName: slipImage.name,
-      fileSize: slipImage.size,
-      fileType: slipImage.type
-    });
-
-    // แปลง cart data
     let cart: CartItem[];
     try {
       cart = JSON.parse(cartData);
     } catch (error) {
-      return NextResponse.json({ 
-        error: "Invalid cart data format" 
-      }, { status: 400 });
+      return NextResponse.json({ error: "Invalid cart data format" }, { status: 400 });
     }
 
-    // อัพโหลดรูปสลิป (ลองหลายวิธี)
     let slipImageUrl: string;
-    
     try {
-      // ลอง Cloudinary ก่อน
       if (await testCloudinaryConnection()) {
         slipImageUrl = await uploadToCloudinary(slipImage);
       } else {
@@ -203,74 +156,71 @@ export async function POST(req: NextRequest) {
       }
     } catch (cloudinaryError) {
       console.error('Cloudinary upload failed, trying local storage:', cloudinaryError);
-      
       try {
-        // ถ้า Cloudinary ไม่ได้ ใช้ local storage
         slipImageUrl = await uploadToLocalStorage(slipImage);
         console.log('Using local storage fallback:', slipImageUrl);
       } catch (localError) {
         console.error('All upload methods failed:', localError);
-        return NextResponse.json({ 
-          error: "Failed to upload slip image",
-          details: "Both Cloudinary and local storage failed"
-        }, { status: 500 });
+        return NextResponse.json({ error: "Failed to upload slip image", details: "Both Cloudinary and local storage failed" }, { status: 500 });
       }
     }
 
-    // สร้างเลขที่ออเดอร์
     const orderNumber = generateOrderNumber();
-
-    // เชื่อมต่อฐานข้อมูล
     const connection = await mysqlPool.getConnection();
-    
     try {
       await connection.beginTransaction();
 
-      // บันทึกข้อมูลออเดอร์
       const [orderResult] = await connection.execute<ResultSetHeader>(
-        `INSERT INTO orders 
-         (order_number, first_name, last_name, nickname, grade, total_price, slip_image_url, created_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          orderNumber,
-          firstName,
-          lastName,
-          nickname,
-          grade,
-          parseFloat(totalPriceStr),
-          slipImageUrl,
-        ]
+        `INSERT INTO orders (order_number, first_name, last_name, nickname, grade, total_price, slip_image_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [orderNumber, firstName, lastName, nickname, grade, parseFloat(totalPriceStr), slipImageUrl]
       );
-
       const orderId = orderResult.insertId;
 
-      // บันทึกรายการสินค้า
+      // บันทึกรายการสินค้าแต่ละประเภท
       for (const item of cart) {
+        // บันทึกรายการหลักลงใน order_items
         await connection.execute(
-          `INSERT INTO order_items 
-           (order_id, product_id, product_name, price, color, wrapping, cart_id) 
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO order_items (order_id, product_id, product_name, price, color, wrapping, cart_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             orderId,
-            item.id,
+            // ใช้ null ถ้าเป็นช่อดอกไม้ หรือใช้ item.id ถ้าเป็นดอกไม้เดี่ยว
+            item.type === "single" ? item.id : null,
             item.name,
             typeof item.price === "string" ? parseFloat(item.price) : item.price,
-            item.color,
-            item.wrapping,
+            item.color || '',
+            item.wrapping || '',
             item.cartId,
           ]
         );
+        
+        // ถ้าเป็นช่อดอกไม้ ให้บันทึกรายละเอียดดอกไม้ลงในตารางใหม่
+        if (item.type === "fresh_bouquet" || item.type === "preserved_bouquet") {
+          if (item.flowers && item.flowers.length > 0) {
+            for (const flower of item.flowers) {
+              await connection.execute(
+                `INSERT INTO order_bouquet_items (order_item_cart_id, flower_id, flower_name, flower_color, flower_price, quantity) VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                  item.cartId,
+                  flower.flowerId,
+                  flower.name,
+                  flower.color,
+                  typeof flower.price === "string" ? parseFloat(flower.price) : flower.price,
+                  flower.quantity,
+                ]
+              );
+            }
+          }
+        }
       }
 
       await connection.commit();
-
       console.log('Order created successfully:', {
         orderNumber,
         orderId,
         customerName: `${firstName} ${lastName}`,
         totalPrice: totalPriceStr,
         itemsCount: cart.length,
-        slipImageUrl
+        slipImageUrl,
       });
 
       return NextResponse.json({
@@ -280,21 +230,21 @@ export async function POST(req: NextRequest) {
         orderId,
         slipImageUrl,
       });
-
     } catch (dbError) {
       await connection.rollback();
       console.error("Database error:", dbError);
-      throw dbError;
+      return NextResponse.json({
+        error: "Failed to create order in database",
+        details: dbError instanceof Error ? dbError.message : "Unknown database error",
+      }, { status: 500 });
     } finally {
       connection.release();
     }
-
   } catch (error) {
     console.error("Order creation error:", error);
-    
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: "Failed to create order",
-      details: error instanceof Error ? error.message : "Unknown error"
+      details: error instanceof Error ? error.message : "Unknown error",
     }, { status: 500 });
   }
 }
