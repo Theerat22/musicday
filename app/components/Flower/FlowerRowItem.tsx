@@ -20,12 +20,15 @@ export default function FlowerRowItem({
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <h3 className="font-medium text-lg mb-1">{flower.name}</h3>
-          {/* <p className="text-sm text-gray-600 mb-2">
-            สี: {flower.colors.join(", ")}
-          </p> */}
-          <p className="text-lg font-bold text-blue-900">
-            {flower.price.toLocaleString()} บาท / ดอก
-          </p>
+          {flower.id === 5 ? (
+            <p className="text-lg font-bold text-blue-900">
+              {flower.price.toLocaleString()} บาท / 3 ดอก
+            </p>
+          ) : (
+            <p className="text-lg font-bold text-blue-900">
+              {flower.price.toLocaleString()} บาท / ดอก
+            </p>
+          )}
         </div>
 
         <div className="flex-shrink-0 ml-4">

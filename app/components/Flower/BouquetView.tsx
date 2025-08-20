@@ -42,7 +42,7 @@ export default function BouquetView({
       (sum, f) => sum + f.price * f.quantity,
       0
     );
-    const arrangementFee = currentBouquetType === "fresh" ? 50 : 25;
+    const arrangementFee = currentBouquetType === "fresh" ? 55 : 25;
     return flowerPrice + arrangementFee;
   };
   const getTitle = (): string => {
@@ -59,7 +59,7 @@ export default function BouquetView({
 
   const getDescription = (): string => {
     return currentView === "fresh_bouquet"
-      ? "ค่าจัดช่อราคา 50 บาท (รวมกระดาษห่อ ริบบิ้น ใบยูคา ยิปโซ คาร์เนชั่น)"
+      ? "ค่าจัดช่อราคา 55 บาท (รวมกระดาษห่อ ริบบิ้น ใบยูคา ยิปโซ)"
       : "ค่าจัดช่อราคา 25 บาท";
   };
 

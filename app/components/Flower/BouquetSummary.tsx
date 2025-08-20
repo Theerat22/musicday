@@ -20,7 +20,7 @@ export default function BouquetSummary({
   if (bouquetFlowers.length === 0) {
     return null;
   }
-  const arrangementFee = currentView === "fresh_bouquet" ? 50 : 25;
+  const arrangementFee = currentView === "fresh_bouquet" ? 55 : 25;
   
   const handleOpenOptions = () => {
     // Calculate the total quantity of selected flowers

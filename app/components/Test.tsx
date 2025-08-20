@@ -132,7 +132,7 @@ export default function Products() {
   };
 
   const addBouquetToCart = () => {
-    if (!selectedColor || !selectedWrapping) {
+    if (!selectedWrapping) {
       alert("กรุณาเลือกสีและกระดาษห่อ");
       return;
     }
@@ -140,7 +140,7 @@ export default function Products() {
       (sum, f) => sum + f.price * f.quantity,
       0
     );
-    const arrangementFee = currentBouquetType === "fresh" ? 60 : 25;
+    const arrangementFee = currentBouquetType === "fresh" ? 55 : 25;
     const totalPrice = totalFlowerPrice + arrangementFee;
 
     const cartItem: CartItem = {
@@ -718,7 +718,7 @@ export default function Products() {
                 </p>
                 {selectedProduct.id === 30004 && (
                   <p className="text-sm text-gray-500 mt-1">
-                    (รวมค่าจัดช่อ 15 บาท)
+                    (ดอกละ 80 บาท + ค่าจัดช่อ 15 บาท)
                   </p>
                 )}
               </div>
