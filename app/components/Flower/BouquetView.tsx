@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Flower, FlowerSelection, ViewType, BouquetType } from "./types";
 import FlowerRowItem from "./FlowerRowItem";
 import BouquetSummary from "./BouquetSummary";
+import { useState } from "react";
 
 interface BouquetViewProps {
   currentView: ViewType;
@@ -12,7 +13,7 @@ interface BouquetViewProps {
   onBackToMain: () => void;
   onQuantityChange: (flowerId: number, quantity: number) => void;
   onRemoveFlower: (index: number) => void;
-  onOpenOptionsModal: () => void; // เปลี่ยนชื่อ props
+  onOpenOptionsModal: () => void;
 }
 
 export default function BouquetView({
@@ -23,10 +24,14 @@ export default function BouquetView({
   onBackToMain,
   onQuantityChange,
   onRemoveFlower,
-  onOpenOptionsModal, // เปลี่ยนชื่อ props
+  onOpenOptionsModal,
 }: BouquetViewProps) {
+  const [showAllFlowers, setShowAllFlowers] = useState(false);
   const maxFlowers = currentBouquetType === "fresh" ? 5 : 20;
-  const currentFlowerCount = bouquetFlowers.reduce((sum, f) => sum + f.quantity, 0);
+  const currentFlowerCount = bouquetFlowers.reduce(
+    (sum, f) => sum + f.quantity,
+    0
+  );
   const getFlowerQuantity = (flowerId: number): number => {
     return bouquetFlowers
       .filter((f) => f.flowerId === flowerId)
@@ -37,12 +42,27 @@ export default function BouquetView({
       (sum, f) => sum + f.price * f.quantity,
       0
     );
-    const arrangementFee = currentBouquetType === "fresh" ? 45 : 10;
+    const arrangementFee = currentBouquetType === "fresh" ? 50 : 25;
     return flowerPrice + arrangementFee;
   };
   const getTitle = (): string => {
-    return currentView === "fresh_bouquet" ? "จัดช่อดอกไม้สด" : "จัดช่อกัมมะหยี่";
+    return currentView === "fresh_bouquet"
+      ? "จัดช่อดอกไม้สด"
+      : "จัดช่อกำมะหยี่";
   };
+  const flowersToDisplay = showAllFlowers ? flowers : flowers.slice(0, 5);
+  const hasMoreFlowers = flowers.length > 5;
+
+  const handleToggleShowAll = () => {
+    setShowAllFlowers(!showAllFlowers);
+  };
+
+  const getDescription = (): string => {
+    return currentView === "fresh_bouquet"
+      ? "ค่าจัดช่อราคา 50 บาท (รวมกระดาษห่อ ริบบิ้น ใบยูคา ยิปโซ คาร์เนชั่น)"
+      : "ค่าจัดช่อราคา 25 บาท";
+  };
+
   return (
     <div className="min-h-screen bg-white p-6 mt-1">
       <div className="max-w-6xl mx-auto">
@@ -57,11 +77,7 @@ export default function BouquetView({
           </button>
           <div>
             <h1 className="text-2xl font-bold text-slate-800">{getTitle()}</h1>
-            <p className="text-gray-600">
-              {" "}
-              เลือกได้สูงสุด {maxFlowers} ดอก | เลือกแล้ว:{" "}
-              {currentFlowerCount} ดอก
-            </p>
+            <p>{getDescription()}</p>
           </div>
         </div>
 
@@ -71,14 +87,15 @@ export default function BouquetView({
           currentView={currentView}
           getTotalPrice={getBouquetTotalPrice}
           onRemoveFlower={onRemoveFlower}
-          onOpenOptions={onOpenOptionsModal} // เรียกฟังก์ชันที่ถูกส่งมาจาก Products
+          onOpenOptions={onOpenOptionsModal}
         />
 
         {/* Flowers list with quantity selectors */}
         <div className="space-y-4">
-          {flowers.map((flower) => {
+          {flowersToDisplay.map((flower) => {
             const currentQuantity = getFlowerQuantity(flower.id);
-            const remainingSlots = maxFlowers - currentFlowerCount + currentQuantity;
+            const remainingSlots =
+              maxFlowers - currentFlowerCount + currentQuantity;
             const maxAllowedForThisFlower = Math.min(
               remainingSlots,
               maxFlowers
@@ -94,6 +111,20 @@ export default function BouquetView({
             );
           })}
         </div>
+        {hasMoreFlowers && (
+          <div className="text-center mt-6">
+            <button
+              onClick={handleToggleShowAll}
+              className="text-blue-600 font-bold hover:underline"
+              type="button"
+            >
+              {showAllFlowers ? "แสดงน้อยลง" : "ดูเพิ่มเติม"}
+            </button>
+          </div>
+        )}
+        <p className="text-gray-600 text-center mt-5">
+          เลือกได้สูงสุด {maxFlowers} ดอก | เลือกแล้ว: {currentFlowerCount} ดอก
+        </p>
         {flowers.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">ไม่พบดอกไม้</p>

@@ -1,3 +1,4 @@
+// components/OrderForm.tsx
 "use client";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { X, Upload, Check, Loader2 } from "lucide-react";
@@ -9,7 +10,7 @@ interface CartItem {
   price: number;
   image: string;
   color: string;
-  wrapping: string;
+  quantity: number; // เปลี่ยนจาก 'wrapping' เป็น 'quantity'
   cartId: string;
 }
 
@@ -183,8 +184,6 @@ export default function OrderForm({
     generateQR(totalPrice);
   }, [totalPrice]);
 
-  // console.log(qrCodeUrl);
-
   const QRCodeDisplay = useMemo(
     () => (
       <div className="bg-gray-50 p-6 rounded-lg text-center mb-6">
@@ -231,13 +230,11 @@ export default function OrderForm({
     [qrCodeUrl, totalPrice, isGeneratingQR]
   );
 
-  // Early return ต้องอยู่หลัง hooks ทั้งหมด
   if (!show) return null;
 
   return (
     <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Header - ความสูงคงที่ */}
         <div className="sticky top-0 p-6 border-b bg-white z-10">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-black">ข้อมูลการสั่งซื้อ</h2>
@@ -250,7 +247,6 @@ export default function OrderForm({
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-6">
           {orderSuccess ? (
             <div className="text-center py-8">
@@ -262,10 +258,8 @@ export default function OrderForm({
             </div>
           ) : (
             <>
-              {/* QR Code Section */}
               {QRCodeDisplay}
 
-              {/* Form Fields */}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -397,7 +391,6 @@ export default function OrderForm({
                 </div>
               </div>
 
-              {/* Submit Button */}
               <button
                 onClick={handleSubmitOrder}
                 disabled={isSubmitting}

@@ -35,7 +35,7 @@ export default function QuantitySelector({
         <button
           onClick={handleDecrease}
           disabled={!canDecrease}
-          className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-red-600 transition-colors font-bold text-lg"
+          className="w-8 h-8 rounded-full bg-red-700 text-white flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-red-600 transition-colors font-bold text-lg"
           type="button"
         >
           -

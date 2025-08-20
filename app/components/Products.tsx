@@ -15,6 +15,7 @@ interface Product {
 interface CartItem extends Product {
   color: string;
   wrapping: string;
+  quantity: number;
   cartId: string;
 }
 
@@ -68,6 +69,7 @@ export default function Products() {
         ...selectedProduct,
         color: selectedColor,
         wrapping: selectedWrapping,
+        quantity: 1,
         cartId: `${selectedProduct.id}-${Date.now()}`,
       };
 

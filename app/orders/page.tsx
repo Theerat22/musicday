@@ -517,7 +517,7 @@ const AdminOrdersPage = () => {
                           <div className="text-xs text-gray-600 mt-1 space-y-1">
                             <p>ราคา: ฿{formatPrice(item.price)}</p>
                             <p>สี: {item.color}</p>
-                            <p>การห่อ: {item.wrapping}</p>
+                            <p>จำนวน: {item.wrapping}</p>
                             
                             {/* แสดงรายละเอียดดอกไม้ในช่อ ถ้ามี */}
                             {item.bouquet_details && item.bouquet_details.length > 0 && (

@@ -7,7 +7,7 @@ interface BouquetSummaryProps {
   currentView: ViewType;
   getTotalPrice: () => number;
   onRemoveFlower: (index: number) => void;
-  onOpenOptions: () => void; // เปลี่ยนชื่อ props
+  onOpenOptions: () => void;
 }
 
 export default function BouquetSummary({
@@ -15,15 +15,26 @@ export default function BouquetSummary({
   currentView,
   getTotalPrice,
   onRemoveFlower,
-  onOpenOptions, // เปลี่ยนชื่อ props
+  onOpenOptions,
 }: BouquetSummaryProps) {
   if (bouquetFlowers.length === 0) {
     return null;
   }
-  const arrangementFee = currentView === "fresh_bouquet" ? 45 : 10;
-  // const getDescription = (): string => {
-  //   return currentView === "fresh_bouquet" ? "เลือกดอกไม้สด สูงสุด 5 ดอก" : "";
-  // };
+  const arrangementFee = currentView === "fresh_bouquet" ? 50 : 25;
+  
+  const handleOpenOptions = () => {
+    // Calculate the total quantity of selected flowers
+    const totalFlowerQuantity = bouquetFlowers.reduce((sum, flower) => sum + flower.quantity, 0);
+
+    // Check the condition only for preserved flowers
+    if (currentView === "preserved_bouquet" && totalFlowerQuantity < 2) {
+      alert("กรุณาเลือกดอกไม้อย่างน้อย 2 ดอก");
+      return; // Stop the function here
+    }
+
+    // If the condition is met or not applicable, proceed
+    onOpenOptions();
+  };
 
   return (
     <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -60,7 +71,7 @@ export default function BouquetSummary({
         </div>
       </div>
       <button
-        onClick={onOpenOptions} // เรียกใช้ฟังก์ชันใหม่
+        onClick={handleOpenOptions} // Call the new validation function
         className="w-full mt-4 bg-black text-white py-2 rounded-md hover:bg-green-700 transition-colors font-bold"
         type="button"
       >

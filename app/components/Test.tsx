@@ -5,7 +5,14 @@ import Image from "next/image";
 import { X, ShoppingCart } from "lucide-react";
 import OrderForm from "./OrderForm";
 import BouquetView from "./Flower/BouquetView";
-import { Product, Flower, FlowerSelection, CartItem, BouquetType, ViewType } from "./Flower/types";
+import {
+  Product,
+  Flower,
+  FlowerSelection,
+  CartItem,
+  BouquetType,
+  ViewType,
+} from "./Flower/types";
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,8 +28,13 @@ export default function Products() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>("main");
   const [bouquetFlowers, setBouquetFlowers] = useState<FlowerSelection[]>([]);
-  const [currentBouquetType, setCurrentBouquetType] = useState<BouquetType>("fresh");
+  const [currentBouquetType, setCurrentBouquetType] =
+    useState<BouquetType>("fresh");
   const [showBouquetOptionsModal, setShowBouquetOptionsModal] = useState(false);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [customQuantities, setCustomQuantities] = useState<{
+    [key: string]: number;
+  }>({ ขาว: 0, ชมพู: 0 }); // New state for product 30004
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,22 +63,23 @@ export default function Products() {
     fetchData();
   }, []);
 
+  const productColors: { [key: number]: string[] } = {
+    30001: [],
+    30002: ["ขาว", "ฟ้า", "ม่วง", "ชมพู"],
+    30003: ["ขาว", "ฟ้า", "ม่วง", "ชมพู"],
+    30004: ["ขาว", "ชมพู"],
+  };
 
-
-  const colors = [
-    "ชมพู",
-    "ม่วง",
-    "ชมพู+แดง",
-    "ชมพู+เหลือง",
-    "ชมพู+ม่วง",
-    "ม่วง+เหลือง",
-  ];
   const wrappings = ["ชมพู", "ขาวครีม", "น้ำตาล"];
+
+  const wrappings_preserved = ["น้ำตาล", "ขาว", "ฟ้า", "ม่วง", "ชมพู", "แสด"];
 
   const handleAddClick = (product: Product) => {
     setSelectedProduct(product);
     setSelectedColor("");
     setSelectedWrapping("");
+    setSelectedQuantity(1);
+    setCustomQuantities({ ขาว: 0, ชมพู: 0 }); // Reset custom quantities
     setShowModal(true);
   };
 
@@ -76,20 +89,26 @@ export default function Products() {
     setBouquetFlowers([]);
   };
 
-  const handleQuantityChange = (flowerId: number, newQuantity: number): void => {
-    const flowers = currentBouquetType === "fresh" ? freshFlowers : preservedFlowers;
-    const flower = flowers.find(f => f.id === flowerId);
+  const handleQuantityChange = (
+    flowerId: number,
+    newQuantity: number
+  ): void => {
+    const flowers =
+      currentBouquetType === "fresh" ? freshFlowers : preservedFlowers;
+    const flower = flowers.find((f) => f.id === flowerId);
     if (!flower) return;
     const maxFlowers = currentBouquetType === "fresh" ? 5 : 20;
     const currentTotal = bouquetFlowers.reduce((sum, f) => sum + f.quantity, 0);
     const currentFlowerQuantity = bouquetFlowers
-      .filter(f => f.flowerId === flowerId)
+      .filter((f) => f.flowerId === flowerId)
       .reduce((sum, f) => sum + f.quantity, 0);
     const quantityDiff = newQuantity - currentFlowerQuantity;
     if (currentTotal + quantityDiff > maxFlowers) {
       return;
     }
-    const updatedBouquet = bouquetFlowers.filter(f => f.flowerId !== flowerId);
+    const updatedBouquet = bouquetFlowers.filter(
+      (f) => f.flowerId !== flowerId
+    );
     if (newQuantity > 0) {
       const defaultColor = flower.colors[0] || "ไม่ระบุสี";
       updatedBouquet.push({
@@ -97,10 +116,15 @@ export default function Products() {
         name: flower.name,
         color: defaultColor,
         price: flower.price,
-        quantity: newQuantity
+        quantity: newQuantity,
       });
     }
     setBouquetFlowers(updatedBouquet);
+  };
+
+  const handleCustomQuantityChange = (color: string, newQuantity: number) => {
+    if (newQuantity < 0) return;
+    setCustomQuantities((prev) => ({ ...prev, [color]: newQuantity }));
   };
 
   const removeFlowerFromBouquet = (index: number) => {
@@ -116,7 +140,7 @@ export default function Products() {
       (sum, f) => sum + f.price * f.quantity,
       0
     );
-    const arrangementFee = currentBouquetType === "fresh" ? 45 : 10;
+    const arrangementFee = currentBouquetType === "fresh" ? 60 : 25;
     const totalPrice = totalFlowerPrice + arrangementFee;
 
     const cartItem: CartItem = {
@@ -125,36 +149,101 @@ export default function Products() {
       price: totalPrice,
       image: "",
       cartId: `bouquet-${Date.now()}`,
-      type: currentBouquetType === "fresh" ? "fresh_bouquet" : "preserved_bouquet",
+      type:
+        currentBouquetType === "fresh" ? "fresh_bouquet" : "preserved_bouquet",
       flowers: [...bouquetFlowers],
       arrangementFee,
-      color: selectedColor, // ใช้ state ที่เลือกไว้
-      wrapping: selectedWrapping, // ใช้ state ที่เลือกไว้
+      color: selectedColor,
+      wrapping: selectedWrapping,
+      quantity: 1,
     };
 
     setCart((prev) => [...prev, cartItem]);
     setBouquetFlowers([]);
     setCurrentView("main");
-    setShowBouquetOptionsModal(false); // ปิด Modal
+    setShowBouquetOptionsModal(false);
     setSelectedColor("");
     setSelectedWrapping("");
   };
 
   const handleAddToCart = () => {
-    if (selectedProduct && selectedColor && selectedWrapping) {
+    if (!selectedProduct) return;
+
+    if (selectedProduct.id === 30004) {
+      const flowersInBouquet: FlowerSelection[] = Object.keys(customQuantities)
+        .filter((color) => customQuantities[color] > 0)
+        .map((color) => {
+          return {
+            flowerId: selectedProduct.id,
+            name: selectedProduct.name,
+            color: color,
+            price: selectedProduct.price,
+            quantity: customQuantities[color],
+          };
+        });
+
+      if (Object.values(customQuantities).every((q) => q === 0)) {
+        alert("กรุณาเลือกจำนวนดอกไม้อย่างน้อย 1 ดอก");
+        return;
+      }
+
+      if (!selectedWrapping) {
+        alert("กรุณาเลือกกระดาษห่อ");
+        return;
+      }
+
+      const arrangementFee = 15;
+      const totalFlowerPrice = flowersInBouquet.reduce(
+        (sum, flower) => sum + flower.price * flower.quantity,
+        0
+      );
+      const totalPrice = totalFlowerPrice + arrangementFee;
+
       const cartItem: CartItem = {
-        ...selectedProduct,
-        color: selectedColor,
+        id: selectedProduct.id,
+        name: "ช่อลิลลี่",
+        price: totalPrice,
+        image: selectedProduct.image,
+        cartId: `bouquet-custom-${Date.now()}`,
+        type: "fresh_bouquet", // Changed type to "fresh_bouquet"
+        flowers: flowersInBouquet,
+        arrangementFee: arrangementFee,
+        color: "ไม่ระบุ", // Color for the whole bouquet is not applicable
         wrapping: selectedWrapping,
-        cartId: `single-${selectedProduct.id}-${Date.now()}`,
-        type: "single",
+        quantity: 1,
       };
+
       setCart((prev) => [...prev, cartItem]);
       setShowModal(false);
       setSelectedProduct(null);
-      setSelectedColor("");
       setSelectedWrapping("");
+      setCustomQuantities({ ขาว: 0, ชมพู: 0 });
+      return;
     }
+
+    // Original logic for other products
+    const requiresColor =
+      productColors[selectedProduct.id] &&
+      productColors[selectedProduct.id].length > 0;
+    if (requiresColor && !selectedColor) {
+      alert("กรุณาเลือกสี");
+      return;
+    }
+
+    const cartItem: CartItem = {
+      ...selectedProduct,
+      price: selectedProduct.price * selectedQuantity,
+      quantity: selectedQuantity,
+      color: selectedColor || "ไม่ระบุสี",
+      wrapping: selectedQuantity.toString(),
+      cartId: `single-${selectedProduct.id}-${Date.now()}`,
+      type: "single",
+    };
+    setCart((prev) => [...prev, cartItem]);
+    setShowModal(false);
+    setSelectedProduct(null);
+    setSelectedColor("");
+    setSelectedQuantity(1);
   };
 
   const removeFromCart = (cartId: string) => {
@@ -192,7 +281,8 @@ export default function Products() {
   }
 
   if (currentView === "fresh_bouquet" || currentView === "preserved_bouquet") {
-    const flowers = currentView === "fresh_bouquet" ? freshFlowers : preservedFlowers;
+    const flowers =
+      currentView === "fresh_bouquet" ? freshFlowers : preservedFlowers;
     return (
       <>
         <BouquetView
@@ -205,7 +295,6 @@ export default function Products() {
           onRemoveFlower={removeFlowerFromBouquet}
           onOpenOptionsModal={openBouquetOptionsModal}
         />
-        {/* Bouquet Options Modal จะแสดงผลที่นี่ */}
         {showBouquetOptionsModal && (
           <section className="fixed inset-0 z-50 overflow-y-auto bg-white bg-opacity-60">
             <div className="min-h-full flex items-start justify-center p-4 py-12">
@@ -219,86 +308,136 @@ export default function Products() {
                 </button>
                 <div className="bg-gray-50 p-8 text-center border-b">
                   <h3 className="text-xl font-medium text-slate-800 mb-1">
-                    เลือกสีและกระดาษห่อสำหรับช่อดอกไม้
+                    เลือกรายละเอียดช่อดอกไม้
                   </h3>
                 </div>
                 <div className="p-8">
-                  <div className="mb-8">
-                    <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
-                      สี
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {colors.map((color) => (
-                        <label
-                          key={color}
-                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                            selectedColor === color
-                              ? "border-black bg-gray-50"
-                              : "border-gray-200"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="bouquet-color"
-                            value={color}
-                            checked={selectedColor === color}
-                            onChange={(e) => setSelectedColor(e.target.value)}
-                            className="sr-only"
-                          />
-                          <div
-                            className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                              selectedColor === color ? "border-black" : "border-gray-300"
+                  {currentBouquetType === "fresh" && ( // เพิ่มเงื่อนไขนี้
+                    <div className="mb-8">
+                      <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                        โทนสี
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          "ชมพู",
+                          "ม่วง",
+                          "ชมพู+แดง",
+                          "ชมพู+เหลือง",
+                          "ชมพู+ม่วง",
+                          "ม่วง+เหลือง",
+                        ].map((color) => (
+                          <label
+                            key={color}
+                            className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                              selectedColor === color
+                                ? "border-black bg-gray-50"
+                                : "border-gray-200"
                             }`}
                           >
-                            {selectedColor === color && (
-                              <div className="w-2 h-2 bg-black rounded-full"></div>
-                            )}
-                          </div>
-                          <span className="text-slate-700 font-medium">
-                            {color}
-                          </span>
-                        </label>
-                      ))}
+                            <input
+                              type="radio"
+                              name="bouquet-color"
+                              value={color}
+                              checked={selectedColor === color}
+                              onChange={(e) => setSelectedColor(e.target.value)}
+                              className="sr-only"
+                            />
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                selectedColor === color
+                                  ? "border-black"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {selectedColor === color && (
+                                <div className="w-2 h-2 bg-black rounded-full"></div>
+                              )}
+                            </div>
+                            <span className="text-slate-700 font-medium">
+                              {color}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}{" "}
+                  {/* สิ้นสุดเงื่อนไข */}
                   <div className="mb-8">
                     <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
                       กระดาษห่อ
                     </h4>
                     <div className="space-y-3">
-                      {wrappings.map((wrapping) => (
-                        <label
-                          key={wrapping}
-                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                            selectedWrapping === wrapping
-                              ? "border-black bg-gray-50"
-                              : "border-gray-200"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="bouquet-wrapping"
-                            value={wrapping}
-                            checked={selectedWrapping === wrapping}
-                            onChange={(e) => setSelectedWrapping(e.target.value)}
-                            className="sr-only"
-                          />
-                          <div
-                            className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                              selectedWrapping === wrapping
-                                ? "border-black"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            {selectedWrapping === wrapping && (
-                              <div className="w-2 h-2 bg-black rounded-full"></div>
-                            )}
-                          </div>
-                          <span className="text-slate-700 font-medium">
-                            {wrapping}
-                          </span>
-                        </label>
-                      ))}
+                      {currentBouquetType === "preserved"
+                        ? wrappings_preserved.map((wrapping) => (
+                            <label
+                              key={wrapping}
+                              className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                                selectedWrapping === wrapping
+                                  ? "border-black bg-gray-50"
+                                  : "border-gray-200"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="bouquet-wrapping"
+                                value={wrapping}
+                                checked={selectedWrapping === wrapping}
+                                onChange={(e) =>
+                                  setSelectedWrapping(e.target.value)
+                                }
+                                className="sr-only"
+                              />
+                              <div
+                                className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                  selectedWrapping === wrapping
+                                    ? "border-black"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                {selectedWrapping === wrapping && (
+                                  <div className="w-2 h-2 bg-black rounded-full"></div>
+                                )}
+                              </div>
+                              <span className="text-slate-700 font-medium">
+                                {wrapping}
+                              </span>
+                            </label>
+                          ))
+                        : wrappings.map((wrapping) => (
+                            <label
+                              key={wrapping}
+                              className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                                selectedWrapping === wrapping
+                                  ? "border-black bg-gray-50"
+                                  : "border-gray-200"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="bouquet-wrapping"
+                                value={wrapping}
+                                checked={selectedWrapping === wrapping}
+                                onChange={(e) =>
+                                  setSelectedWrapping(e.target.value)
+                                }
+                                className="sr-only"
+                              />
+                              <div
+                                className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                  selectedWrapping === wrapping
+                                    ? "border-black"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                {selectedWrapping === wrapping && (
+                                  <div className="w-2 h-2 bg-black rounded-full"></div>
+                                )}
+                              </div>
+                              <span className="text-slate-700 font-medium">
+                                {wrapping}
+                              </span>
+                            </label>
+                          ))}
                     </div>
                   </div>
                   <button
@@ -321,7 +460,6 @@ export default function Products() {
   return (
     <div className="min-h-screen bg-white p-6 mt-1">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-800">
             Pre-order ดอกไม้
@@ -338,7 +476,6 @@ export default function Products() {
           onSuccess={handleOrderSuccess}
         />
 
-        {/* Cart Modal */}
         {showCart && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-end z-50">
             <div className="bg-white w-full max-w-md h-full overflow-y-auto shadow-2xl">
@@ -375,6 +512,11 @@ export default function Products() {
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="font-medium text-black">
                               {item.name}
+                              {item.quantity && (
+                                <span className="text-sm font-normal text-gray-500 ml-2">
+                                  x{item.quantity}
+                                </span>
+                              )}
                             </h3>
                             <button
                               onClick={() => removeFromCart(item.cartId)}
@@ -385,18 +527,16 @@ export default function Products() {
                             </button>
                           </div>
 
-                          {item.type === "single" &&
-                            item.color &&
-                            item.wrapping && (
-                              <>
-                                <p className="text-sm text-gray-600 mb-1">
-                                  สี: {item.color}
-                                </p>
-                                <p className="text-sm text-gray-600 mb-2">
-                                  กระดาษห่อ: {item.wrapping}
-                                </p>
-                              </>
-                            )}
+                          {item.type === "single" && (
+                            <>
+                              <p className="text-sm text-gray-600 mb-1">
+                                สี: {item.color}
+                              </p>
+                              <p className="text-sm text-gray-600 mb-2">
+                                จำนวน: {item.wrapping}
+                              </p>
+                            </>
+                          )}
 
                           {(item.type === "fresh_bouquet" ||
                             item.type === "preserved_bouquet") &&
@@ -405,7 +545,7 @@ export default function Products() {
                                 <p className="mb-1">ดอกไม้:</p>
                                 {item.flowers.map((flower, idx) => (
                                   <p key={idx} className="ml-2">
-                                    • {flower.name} x
+                                    • {flower.name} ({flower.color}) x
                                     {flower.quantity}
                                   </p>
                                 ))}
@@ -450,12 +590,8 @@ export default function Products() {
           </div>
         )}
 
-        {/* Service Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <button 
-            onClick={() => handleBouquetClick("fresh")}
-            type="button"
-          >
+          <button onClick={() => handleBouquetClick("fresh")} type="button">
             <div className="relative group">
               <div>
                 <Image
@@ -476,10 +612,7 @@ export default function Products() {
             </div>
           </button>
 
-          <button 
-            onClick={() => handleBouquetClick("preserved")}
-            type="button"
-          >
+          <button onClick={() => handleBouquetClick("preserved")} type="button">
             <div className="relative group">
               <div>
                 <Image
@@ -501,7 +634,6 @@ export default function Products() {
           </button>
         </div>
 
-        {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <div
@@ -538,11 +670,12 @@ export default function Products() {
         </div>
       </div>
 
-
-      {/* Cart Button */}
       <div className="fixed bottom-6 right-6 z-40">
         <button
-          onClick={() => {setShowCart(!showCart); console.log(cart);}}
+          onClick={() => {
+            setShowCart(!showCart);
+            console.log(cart);
+          }}
           className="bg-black text-white p-4 rounded-full shadow-lg hover:bg-gray-800 transition-all transform hover:scale-105 relative"
           type="button"
         >
@@ -555,8 +688,6 @@ export default function Products() {
         </button>
       </div>
 
-
-      {/* Single Product Modal */}
       {showModal && selectedProduct && (
         <section className="fixed inset-0 z-50 overflow-y-auto bg-white bg-opacity-60">
           <div className="min-h-full flex items-start justify-center p-4 py-12">
@@ -574,105 +705,213 @@ export default function Products() {
                   {selectedProduct.name}
                 </h3>
                 <p className="text-2xl font-bold text-black">
-                  ฿{selectedProduct.price.toLocaleString()}
+                  ฿
+                  {(selectedProduct.id === 30004
+                    ? Object.values(customQuantities).reduce(
+                        (sum, q) => sum + q,
+                        0
+                      ) *
+                        selectedProduct.price +
+                      15
+                    : selectedProduct.price * selectedQuantity
+                  ).toLocaleString()}
                 </p>
+                {selectedProduct.id === 30004 && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    (รวมค่าจัดช่อ 15 บาท)
+                  </p>
+                )}
               </div>
 
               <div className="p-8">
-                <div className="mb-8">
-                  <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
-                    สี
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {colors.map((color) => (
-                      <label
-                        key={color}
-                        className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                          selectedColor === color
-                            ? "border-black bg-gray-50"
-                            : "border-gray-200"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="color"
-                          value={color}
-                          checked={selectedColor === color}
-                          onChange={(e) => setSelectedColor(e.target.value)}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                            selectedColor === color
-                              ? "border-black"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          {selectedColor === color && (
-                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                          )}
-                        </div>
-                        <span className="text-slate-700 font-medium">
-                          {color}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                {selectedProduct.id !== 30004 &&
+                  productColors[selectedProduct.id] &&
+                  productColors[selectedProduct.id].length > 0 && (
+                    <div className="mb-8">
+                      <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                        สี
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        {productColors[selectedProduct.id].map((color) => (
+                          <label
+                            key={color}
+                            className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                              selectedColor === color
+                                ? "border-black bg-gray-50"
+                                : "border-gray-200"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="color"
+                              value={color}
+                              checked={selectedColor === color}
+                              onChange={(e) => setSelectedColor(e.target.value)}
+                              className="sr-only"
+                            />
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                selectedColor === color
+                                  ? "border-black"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {selectedColor === color && (
+                                <div className="w-2 h-2 bg-black rounded-full"></div>
+                              )}
+                            </div>
+                            <span className="text-slate-700 font-medium">
+                              {color}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                <div className="mb-8">
-                  <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
-                    กระดาษห่อ
-                  </h4>
-                  <div className="space-y-3">
-                    {wrappings.map((wrapping) => (
-                      <label
-                        key={wrapping}
-                        className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                          selectedWrapping === wrapping
-                            ? "border-black bg-gray-50"
-                            : "border-gray-200"
-                        }`}
+                {selectedProduct.id === 30004 ? (
+                  <>
+                    <div className="mb-8">
+                      <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                        จำนวน
+                      </h4>
+                      <div className="space-y-4">
+                        {productColors[30004].map((color) => (
+                          <div
+                            key={color}
+                            className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                          >
+                            <span className="font-medium text-slate-700">
+                              {color}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() =>
+                                  handleCustomQuantityChange(
+                                    color,
+                                    customQuantities[color] - 1
+                                  )
+                                }
+                                disabled={customQuantities[color] <= 0}
+                                className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                                type="button"
+                              >
+                                -
+                              </button>
+                              <span className="w-6 text-center text-sm font-bold">
+                                {customQuantities[color]}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleCustomQuantityChange(
+                                    color,
+                                    customQuantities[color] + 1
+                                  )
+                                }
+                                className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                                type="button"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-8">
+                      <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                        กระดาษห่อ
+                      </h4>
+                      <div className="space-y-3">
+                        {wrappings.map((wrapping) => (
+                          <label
+                            key={wrapping}
+                            className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                              selectedWrapping === wrapping
+                                ? "border-black bg-gray-50"
+                                : "border-gray-200"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="wrapping"
+                              value={wrapping}
+                              checked={selectedWrapping === wrapping}
+                              onChange={(e) =>
+                                setSelectedWrapping(e.target.value)
+                              }
+                              className="sr-only"
+                            />
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                selectedWrapping === wrapping
+                                  ? "border-black"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {selectedWrapping === wrapping && (
+                                <div className="w-2 h-2 bg-black rounded-full"></div>
+                              )}
+                            </div>
+                            <span className="text-slate-700 font-medium">
+                              {wrapping}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mb-8">
+                    <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                      จำนวน
+                    </h4>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() =>
+                          setSelectedQuantity(Math.max(1, selectedQuantity - 1))
+                        }
+                        disabled={selectedQuantity <= 1}
+                        className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-red-600 transition-colors font-bold text-lg"
+                        type="button"
                       >
-                        <input
-                          type="radio"
-                          name="wrapping"
-                          value={wrapping}
-                          checked={selectedWrapping === wrapping}
-                          onChange={(e) =>
-                            setSelectedWrapping(e.target.value)
-                          }
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                            selectedWrapping === wrapping
-                              ? "border-black"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          {selectedWrapping === wrapping && (
-                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                          )}
-                        </div>
-                        <span className="text-slate-700 font-medium">
-                          {wrapping}
-                        </span>
-                      </label>
-                    ))}
+                        -
+                      </button>
+                      <span className="w-8 text-center font-bold text-lg">
+                        {selectedQuantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setSelectedQuantity(selectedQuantity + 1)
+                        }
+                        className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-green-600 transition-colors font-bold text-lg"
+                        type="button"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-                </div>
-
+                )}
                 <button
                   onClick={handleAddToCart}
-                  disabled={!selectedColor || !selectedWrapping}
+                  disabled={
+                    (selectedProduct.id !== 30004 &&
+                      productColors[selectedProduct.id] &&
+                      productColors[selectedProduct.id].length > 0 &&
+                      !selectedColor) ||
+                    (selectedProduct.id === 30004 &&
+                      (Object.values(customQuantities).reduce(
+                        (sum, q) => sum + q,
+                        0
+                      ) === 0 ||
+                        !selectedWrapping))
+                  }
                   className="w-full bg-black text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                   type="button"
                 >
                   เพิ่มลงในตะกร้า
                 </button>
               </div>
-              
             </div>
           </div>
         </section>
