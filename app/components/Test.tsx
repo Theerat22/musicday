@@ -442,7 +442,7 @@ export default function Products() {
                   </div>
                   <button
                     onClick={addBouquetToCart}
-                    disabled={!selectedColor || !selectedWrapping}
+                    disabled={!selectedWrapping}
                     className="w-full bg-black text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     type="button"
                   >
