@@ -8,6 +8,8 @@ interface BouquetSummaryProps {
   getTotalPrice: () => number;
   onRemoveFlower: (index: number) => void;
   onOpenOptions: () => void;
+  hasExtraCarnations: boolean; // New prop
+  setHasExtraCarnations: (checked: boolean) => void; // New prop
 }
 
 export default function BouquetSummary({
@@ -16,15 +18,19 @@ export default function BouquetSummary({
   getTotalPrice,
   onRemoveFlower,
   onOpenOptions,
+  hasExtraCarnations,
+  setHasExtraCarnations,
 }: BouquetSummaryProps) {
-  if (bouquetFlowers.length === 0) {
+  if (bouquetFlowers.length === 0 && !hasExtraCarnations) {
     return null;
   }
   const arrangementFee = currentView === "fresh_bouquet" ? 55 : 25;
-  
+
   const handleOpenOptions = () => {
     // Calculate the total quantity of selected flowers
-    const totalFlowerQuantity = bouquetFlowers.reduce((sum, flower) => sum + flower.quantity, 0);
+    const totalFlowerQuantity =
+      bouquetFlowers.reduce((sum, flower) => sum + flower.quantity, 0) +
+      (hasExtraCarnations ? 3 : 0);
 
     // Check the condition only for preserved flowers
     if (currentView === "preserved_bouquet" && totalFlowerQuantity < 2) {
@@ -61,6 +67,14 @@ export default function BouquetSummary({
             </div>
           </div>
         ))}
+        {/* New checkbox for extra carnations */}
+
+        {hasExtraCarnations && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm">คาร์เนชั่น x 3</span>
+            <span className="text-sm font-medium">30 บาท</span>
+          </div>
+        )}
         <div className="border-t pt-2 flex justify-between items-center font-medium">
           <span>ค่าจัดช่อ:</span>
           <span>{arrangementFee} บาท</span>
@@ -69,6 +83,18 @@ export default function BouquetSummary({
           <span>รวมทั้งหมด:</span>
           <span>{getTotalPrice().toLocaleString()} บาท</span>
         </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="extra-carnations"
+          checked={hasExtraCarnations}
+          onChange={(e) => setHasExtraCarnations(e.target.checked)}
+          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        />
+        <label htmlFor="extra-carnations" className="text-sm text-gray-700">
+          เพิ่มคาร์เนชั่น 3 ดอก
+        </label>
       </div>
       <button
         onClick={handleOpenOptions} // Call the new validation function

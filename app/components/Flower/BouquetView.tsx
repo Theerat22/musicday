@@ -27,29 +27,39 @@ export default function BouquetView({
   onOpenOptionsModal,
 }: BouquetViewProps) {
   const [showAllFlowers, setShowAllFlowers] = useState(false);
+  const [hasExtraCarnations, setHasExtraCarnations] = useState(false);
   const maxFlowers = currentBouquetType === "fresh" ? 5 : 20;
+  
+  // Calculate the total flower count, including extra carnations if selected
   const currentFlowerCount = bouquetFlowers.reduce(
     (sum, f) => sum + f.quantity,
     0
   );
+  const totalDisplayCount = currentFlowerCount + (hasExtraCarnations ? 3 : 0);
+
   const getFlowerQuantity = (flowerId: number): number => {
     return bouquetFlowers
       .filter((f) => f.flowerId === flowerId)
       .reduce((sum, f) => sum + f.quantity, 0);
   };
+
   const getBouquetTotalPrice = (): number => {
     const flowerPrice = bouquetFlowers.reduce(
       (sum, f) => sum + f.price * f.quantity,
       0
     );
     const arrangementFee = currentBouquetType === "fresh" ? 55 : 25;
-    return flowerPrice + arrangementFee;
+    const extraCarnationsPrice = hasExtraCarnations ? 30 : 0;
+    
+    return flowerPrice + arrangementFee + extraCarnationsPrice;
   };
+  
   const getTitle = (): string => {
     return currentView === "fresh_bouquet"
       ? "จัดช่อดอกไม้สด"
       : "จัดช่อกำมะหยี่";
   };
+  
   const flowersToDisplay = showAllFlowers ? flowers : flowers.slice(0, 5);
   const hasMoreFlowers = flowers.length > 5;
 
@@ -88,6 +98,8 @@ export default function BouquetView({
           getTotalPrice={getBouquetTotalPrice}
           onRemoveFlower={onRemoveFlower}
           onOpenOptions={onOpenOptionsModal}
+          hasExtraCarnations={hasExtraCarnations} // Pass the new state
+          setHasExtraCarnations={setHasExtraCarnations} // Pass the state setter
         />
 
         {/* Flowers list with quantity selectors */}
@@ -123,7 +135,7 @@ export default function BouquetView({
           </div>
         )}
         <p className="text-gray-600 text-center mt-5">
-          เลือกได้สูงสุด {maxFlowers} ดอก | เลือกแล้ว: {currentFlowerCount} ดอก
+          เลือกได้สูงสุด {maxFlowers} ดอก | เลือกแล้ว: {totalDisplayCount} ดอก
         </p>
         {flowers.length === 0 && (
           <div className="text-center py-12">

@@ -545,7 +545,7 @@ export default function Products() {
                                 <p className="mb-1">ดอกไม้:</p>
                                 {item.flowers.map((flower, idx) => (
                                   <p key={idx} className="ml-2">
-                                    • {flower.name} ({flower.color}) x
+                                    • {flower.name} ({flower.price}) x
                                     {flower.quantity}
                                   </p>
                                 ))}
