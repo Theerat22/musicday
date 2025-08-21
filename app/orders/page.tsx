@@ -1,6 +1,15 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Eye, Check, Package, X, Clock, Filter, Search, Calendar } from "lucide-react";
+import {
+  Eye,
+  Check,
+  Package,
+  X,
+  Clock,
+  Filter,
+  Search,
+  Calendar,
+} from "lucide-react";
 import Image from "next/image";
 
 interface BouquetDetail {
@@ -45,7 +54,7 @@ const AdminOrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
-  
+
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -79,13 +88,13 @@ const AdminOrdersPage = () => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           order.order_number.toLowerCase().includes(searchLower) ||
           order.first_name.toLowerCase().includes(searchLower) ||
           order.last_name.toLowerCase().includes(searchLower) ||
           order.nickname.toLowerCase().includes(searchLower) ||
           order.grade.toLowerCase().includes(searchLower);
-        
+
         if (!matchesSearch) return false;
       }
 
@@ -201,11 +210,14 @@ const AdminOrdersPage = () => {
   };
 
   const statusCounts = useMemo(() => {
-    return orders.reduce((counts, order) => {
-      counts[order.status] = (counts[order.status] || 0) + 1;
-      counts.all = (counts.all || 0) + 1;
-      return counts;
-    }, {} as Record<string, number>);
+    return orders.reduce(
+      (counts, order) => {
+        counts[order.status] = (counts[order.status] || 0) + 1;
+        counts.all = (counts.all || 0) + 1;
+        return counts;
+      },
+      {} as Record<string, number>
+    );
   }, [orders]);
 
   if (loading) {
@@ -216,24 +228,14 @@ const AdminOrdersPage = () => {
     );
   }
 
-  const isBouquet = (product_id: number | null): boolean => {
-    // Assuming product IDs 1 and 2 are fresh and preserved bouquets
-    return product_id === 1 || product_id === 2;
-  };
-  
-  const getBouquetType = (product_id: number | null): string => {
-    if (product_id === 1) return "ช่อดอกไม้สด";
-    if (product_id === 2) return "ช่อดอกไม้แห้ง";
-    return "";
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">จัดการคำสั่งซื้อ</h1>
           <p className="text-gray-600 mt-2">
-            จัดการและติดตามสถานะคำสั่งซื้อทั้งหมด ({filteredOrders.length} จาก {orders.length} รายการ)
+            จัดการและติดตามสถานะคำสั่งซื้อทั้งหมด ({filteredOrders.length} จาก{" "}
+            {orders.length} รายการ)
           </p>
         </div>
 
@@ -320,7 +322,10 @@ const AdminOrdersPage = () => {
                     ค้นหา
                   </label>
                   <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="text"
                       placeholder="หมายเลขออเดอร์, ชื่อ, ชื่อเล่น, ชั้น"
@@ -337,7 +342,10 @@ const AdminOrdersPage = () => {
                     วันที่เริ่มต้น
                   </label>
                   <div className="relative">
-                    <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Calendar
+                      size={16}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="date"
                       value={dateFrom}
@@ -353,7 +361,10 @@ const AdminOrdersPage = () => {
                     วันที่สิ้นสุด
                   </label>
                   <div className="relative">
-                    <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Calendar
+                      size={16}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="date"
                       value={dateTo}
@@ -523,29 +534,33 @@ const AdminOrdersPage = () => {
                           className="bg-white p-3 rounded-lg border border-gray-200"
                         >
                           <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-medium text-black">
-                                {item.product_name}
-                              </h3>
+                            <h3 className="font-medium text-black">
+                              {item.product_name}
+                            </h3>
                           </div>
-                          
-                          {isBouquet(item.product_id) ? (
-                            // Display for bouquets
+
+                          {/* Display for bouquets */}
+                          {item.bouquet_details &&
+                          item.bouquet_details.length > 0 ? (
                             <div className="text-sm text-gray-600 mb-2">
                               <p className="mb-1">
-                                ประเภท: {getBouquetType(item.product_id)}
+                                ประเภท: {item.product_name}
                               </p>
-                              <p className="mb-1">
-                                ดอกไม้:
-                              </p>
-                              {item.bouquet_details && item.bouquet_details.length > 0 && (
-                                <ul className="list-disc list-inside ml-2">
-                                  {item.bouquet_details.map((flower, idx) => (
-                                    <li key={idx}>
-                                      {flower.flower_name} x {flower.quantity}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
+                              <p className="mb-1">ดอกไม้:</p>
+                              <ul className="list-disc list-inside ml-2">
+                                {item.bouquet_details.map((flower, idx) => (
+                                  <li key={idx}>
+                                    {flower.flower_name} x {flower.quantity}
+                                    {/* Conditional rendering for flower color */}
+                                    {item.product_name === "ช่อลิลลี่" && (
+                                      <span className="text-gray-500">
+                                        {" "}
+                                        ({flower.flower_color})
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
                               <p className="text-sm text-gray-600 ">
                                 โทนสี: {item.color || "ไม่ระบุ"}
                               </p>
@@ -553,7 +568,16 @@ const AdminOrdersPage = () => {
                                 กระดาษห่อ: {item.wrapping || "ไม่ระบุ"}
                               </p>
                               <p className="text-sm text-gray-600 ">
-                                ค่าจัดช่อ: {formatPrice(item.price - (item.bouquet_details?.reduce((sum, f) => sum + f.flower_price * f.quantity, 0) || 0))} บาท
+                                ค่าจัดช่อ:{" "}
+                                {formatPrice(
+                                  item.price -
+                                    (item.bouquet_details?.reduce(
+                                      (sum, f) =>
+                                        sum + f.flower_price * f.quantity,
+                                      0
+                                    ) || 0)
+                                )}{" "}
+                                บาท
                               </p>
                             </div>
                           ) : (
