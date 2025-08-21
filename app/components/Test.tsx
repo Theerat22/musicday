@@ -530,7 +530,10 @@ export default function Products() {
                           {item.type === "single" && (
                             <>
                               <p className="text-sm text-gray-600 mb-1">
-                                สี: {item.color}
+                                ราคาดอก: {item.price/item.quantity}
+                              </p>
+                              <p className="text-sm text-gray-600 mb-1">
+                                สี: {item.color || "ไม่ระบุ"}
                               </p>
                               <p className="text-sm text-gray-600 mb-2">
                                 จำนวน: {item.wrapping}
@@ -545,8 +548,11 @@ export default function Products() {
                                 <p className="mb-1">ดอกไม้:</p>
                                 {item.flowers.map((flower, idx) => (
                                   <p key={idx} className="ml-2">
-                                    • {flower.name} ({flower.price}) x
-                                    {flower.quantity}
+                                    • {flower.name} (
+                                    {flower.flowerId === 30004
+                                      ? flower.color
+                                      : flower.price}
+                                    ) x {flower.quantity}
                                   </p>
                                 ))}
                                 <p className="text-sm text-gray-600 ">

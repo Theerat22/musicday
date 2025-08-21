@@ -1,6 +1,15 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Eye, Check, Package, X, Clock, Filter, Search, Calendar } from "lucide-react";
+import {
+  Eye,
+  Check,
+  Package,
+  X,
+  Clock,
+  Filter,
+  Search,
+  Calendar,
+} from "lucide-react";
 import Image from "next/image";
 
 interface BouquetDetail {
@@ -45,7 +54,7 @@ const AdminOrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
-  
+
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -79,13 +88,13 @@ const AdminOrdersPage = () => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           order.order_number.toLowerCase().includes(searchLower) ||
           order.first_name.toLowerCase().includes(searchLower) ||
           order.last_name.toLowerCase().includes(searchLower) ||
           order.nickname.toLowerCase().includes(searchLower) ||
           order.grade.toLowerCase().includes(searchLower);
-        
+
         if (!matchesSearch) return false;
       }
 
@@ -201,11 +210,14 @@ const AdminOrdersPage = () => {
   };
 
   const statusCounts = useMemo(() => {
-    return orders.reduce((counts, order) => {
-      counts[order.status] = (counts[order.status] || 0) + 1;
-      counts.all = (counts.all || 0) + 1;
-      return counts;
-    }, {} as Record<string, number>);
+    return orders.reduce(
+      (counts, order) => {
+        counts[order.status] = (counts[order.status] || 0) + 1;
+        counts.all = (counts.all || 0) + 1;
+        return counts;
+      },
+      {} as Record<string, number>
+    );
   }, [orders]);
 
   if (loading) {
@@ -222,7 +234,7 @@ const AdminOrdersPage = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">จัดการคำสั่งซื้อ</h1>
           <p className="text-gray-600 mt-2">
-            จัดการและติดตามสถานะคำสั่งซื้อทั้งหมด ({filteredOrders.length} จาก {orders.length} รายการ)
+            ({filteredOrders.length} จาก {orders.length} รายการ)
           </p>
         </div>
 
@@ -309,7 +321,10 @@ const AdminOrdersPage = () => {
                     ค้นหา
                   </label>
                   <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="text"
                       placeholder="หมายเลขออเดอร์, ชื่อ, ชื่อเล่น, ชั้น"
@@ -326,7 +341,10 @@ const AdminOrdersPage = () => {
                     วันที่เริ่มต้น
                   </label>
                   <div className="relative">
-                    <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Calendar
+                      size={16}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="date"
                       value={dateFrom}
@@ -342,7 +360,10 @@ const AdminOrdersPage = () => {
                     วันที่สิ้นสุด
                   </label>
                   <div className="relative">
-                    <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Calendar
+                      size={16}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="date"
                       value={dateTo}
@@ -508,33 +529,70 @@ const AdminOrdersPage = () => {
                     <div className="space-y-3">
                       {selectedOrder.items?.map((item) => (
                         <div
-                          key={item.cart_id} // ใช้ cart_id เป็น key เพื่อให้ไม่ซ้ำกัน
-                          className="bg-gray-50 p-3 rounded-lg"
+                          key={item.cart_id}
+                          className="bg-white p-3 rounded-lg border border-gray-200"
                         >
-                          <p className="font-medium text-sm">
-                            {item.product_name}
-                          </p>
-                          <div className="text-xs text-gray-600 mt-1 space-y-1">
-                            <p>ราคา: ฿{formatPrice(item.price)}</p>
-                            <p>สี: {item.color}</p>
-                            <p>จำนวน: {item.wrapping}</p>
-                            
-                            {/* แสดงรายละเอียดดอกไม้ในช่อ ถ้ามี */}
-                            {item.bouquet_details && item.bouquet_details.length > 0 && (
-                              <div className="mt-2 pt-2 border-t border-gray-200">
-                                <p className="font-medium text-gray-800">
-                                  รายละเอียดในช่อ:
-                                </p>
-                                <ul className="list-disc list-inside mt-1 space-y-0.5">
-                                  {item.bouquet_details.map((flower, index) => (
-                                    <li key={index} className="text-gray-600">
-                                      {flower.flower_name} x {flower.quantity}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-medium text-black">
+                              {item.product_name}
+                            </h3>
                           </div>
+
+                          {/* Display for bouquets */}
+                          {item.bouquet_details &&
+                          item.bouquet_details.length > 0 ? (
+                            <div className="text-sm text-gray-600 mb-1">
+                              <p className="mb-1">ดอกไม้:</p>
+                              <ul className="list-disc list-inside ml-2">
+                                {item.bouquet_details.map((flower, idx) => (
+                                  <li key={idx}>
+                                    {flower.flower_name} x {flower.quantity}
+                                    {/* Conditional rendering for flower color */}
+                                    {item.product_name === "ช่อลิลลี่" && (
+                                      <span className="text-gray-500">
+                                        {" "}
+                                        ({flower.flower_color})
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                              <p className="text-sm text-gray-600 ">
+                                โทนสี: {item.color || "ไม่ระบุ"}
+                              </p>
+                              <p className="text-sm text-gray-600 ">
+                                กระดาษห่อ: {item.wrapping || "ไม่ระบุ"}
+                              </p>
+                              <p className="text-sm text-gray-600 ">
+                                ค่าจัดช่อ:{" "}
+                                {formatPrice(
+                                  item.price -
+                                    (item.bouquet_details?.reduce(
+                                      (sum, f) =>
+                                        sum + f.flower_price * f.quantity,
+                                      0
+                                    ) || 0)
+                                )}{" "}
+                                บาท
+                              </p>
+                            </div>
+                          ) : (
+                            // Display for single flowers
+                            <>
+                              <p className="text-sm text-gray-600 mb-1">
+                                ราคาดอก: ฿{formatPrice(item.price)}
+                              </p>
+                              <p className="text-sm text-gray-600 mb-1">
+                                สี: {item.color || "ไม่ระบุ"}
+                              </p>
+                              <p className="text-sm text-gray-600 mb-2">
+                                จำนวน: {item.wrapping}
+                              </p>
+                            </>
+                          )}
+                          <p className="font-bold text-black">
+                            ฿{formatPrice(item.price)}
+                          </p>
                         </div>
                       ))}
                     </div>
