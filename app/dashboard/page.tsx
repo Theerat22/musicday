@@ -13,7 +13,6 @@ import {
   PackageCheck,
 } from "lucide-react";
 
-// Re-use the existing interfaces for consistency
 interface BouquetDetail {
   flower_id: number;
   flower_name: string;
@@ -116,26 +115,33 @@ const AdminFinancePage = () => {
       if (order.status === "completed") statusCounts.completed++;
       customerIds.add(order.order_number);
 
-      // ยอดขายรวมคำนวณจากยอดรวมของออเดอร์ที่ยืนยันและเสร็จสิ้น
       if (order.status === "confirmed" || order.status === "completed") {
         totalRevenue += Number(order.total_price);
       }
 
       order.items.forEach((item) => {
-        // ตรวจสอบประเภทดอกไม้จาก product_name และ cart_id
-        const isFreshProduct = item.product_name.includes("ช่อดอกไม้สด") || item.product_name.includes("ช่อลิลลี่") || (!item.product_name.includes("ช่อกำมะหยี่") && !item.cart_id.includes("single"));
+        // ตรวจสอบประเภทสินค้าที่ชัดเจน
+        const isFreshProduct = item.product_name.includes("ช่อดอกไม้สด") || item.product_name.includes("ช่อลิลลี่");
         const isVelvetProduct = item.product_name.includes("ช่อกำมะหยี่") || item.cart_id.includes("single");
-
-        let flowerCount = 0;
         
+        // คำนวณรายได้แต่ละประเภท และนับจำนวนดอกไม้
+        if (order.status === "confirmed" || order.status === "completed") {
+            const itemPrice = Number(item.price);
+            if (isFreshProduct) {
+                freshFlowerRevenue += itemPrice;
+            } else if (isVelvetProduct) {
+                velvetFlowerRevenue += itemPrice;
+            }
+        }
+
         if (item.bouquet_details && item.bouquet_details.length > 0) {
-          // กรณีช่อดอกไม้: นับจำนวนดอกไม้จาก bouquet_details
+          // ถ้ามีรายละเอียดดอกไม้ในช่อ ให้วนลูปนับจาก bouquet_details
           item.bouquet_details.forEach(flower => {
             const currentFlowerName = flower.flower_name.trim();
             const quantity = flower.quantity;
-            flowerCount += quantity;
             
-            if (currentFlowerName.includes("กำมะหยี่")) {
+            // ใช้ logic แยกประเภทจาก item หลัก
+            if (isVelvetProduct) {
               const existingVelvet = velvetFlowers.get(currentFlowerName);
               if (existingVelvet) {
                 existingVelvet.count += quantity;
@@ -152,9 +158,9 @@ const AdminFinancePage = () => {
             }
           });
         } else {
-          // กรณีสินค้าเดี่ยว: นับจำนวนจาก wrapping หรือ 1
-          flowerCount = item.wrapping ? parseInt(item.wrapping, 10) : 1;
+          // ถ้าเป็นสินค้าเดี่ยว ให้ใช้ product_name และ wrapping เป็นจำนวน
           const flowerName = item.product_name.trim();
+          const flowerCount = item.wrapping ? parseInt(item.wrapping, 10) : 1;
 
           if (isFreshProduct) {
             const existingFresh = freshFlowers.get(flowerName);
@@ -171,16 +177,6 @@ const AdminFinancePage = () => {
               velvetFlowers.set(flowerName, { count: flowerCount });
             }
           }
-        }
-        
-        // คำนวณรายได้จาก price ใน order_items
-        if (order.status === "confirmed" || order.status === "completed") {
-            const itemPrice = Number(item.price);
-            if (isFreshProduct) {
-                freshFlowerRevenue += itemPrice;
-            } else if (isVelvetProduct) {
-                velvetFlowerRevenue += itemPrice;
-            }
         }
       });
     });

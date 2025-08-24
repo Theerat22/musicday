@@ -3,7 +3,7 @@ import { mysqlPool } from "@/utils/db";
 
 export async function GET() {
   try {
-    const [rows] = await mysqlPool.query("SELECT * FROM order_items;");
+    const [rows] = await mysqlPool.query("SELECT * FROM order_bouquet_items;");
     return NextResponse.json(rows);
   } catch (error) {
     console.error("Database error:", error);
