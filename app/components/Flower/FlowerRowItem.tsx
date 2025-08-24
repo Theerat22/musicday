@@ -2,6 +2,7 @@
 import { Flower } from "./types";
 import QuantitySelector from "./QuantitySelector";
 import Image from "next/image";
+
 interface FlowerRowItemProps {
   flower: Flower;
   currentQuantity: number;
@@ -25,6 +26,9 @@ export default function FlowerRowItem({
             className="object-cover w-full h-full"
             width={100}
             height={100}
+            quality={60} // เพิ่ม quality เพื่อลดขนาดไฟล์
+            priority // เพิ่ม priority เพื่อให้โหลดภาพได้เร็วขึ้น
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // เพิ่ม sizes เพื่อให้เลือกขนาดภาพที่เหมาะสมกับ viewport
           />
         </div>
       </div>

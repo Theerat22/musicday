@@ -8,7 +8,7 @@ export default function Home() {
       <Products />
       <footer className="bg-blue-950 p-1">
         <p className="text-center text-sm p-3 text-white">
-          &copy; Chitralada 56
+          &copy; CHITRALADA 56
         </p>
       </footer>
     </section>

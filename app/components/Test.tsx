@@ -530,7 +530,7 @@ export default function Products() {
                           {item.type === "single" && (
                             <>
                               <p className="text-sm text-gray-600 mb-1">
-                                ราคาดอก: {item.price/item.quantity}
+                                ราคาดอก: {item.price / item.quantity}
                               </p>
                               <p className="text-sm text-gray-600 mb-1">
                                 สี: {item.color || "ไม่ระบุ"}
@@ -605,6 +605,8 @@ export default function Products() {
                   alt="Fresh Bouquet"
                   width={200}
                   height={200}
+                  quality={70}
+                  priority
                   className="object-cover w-full h-[150px] shadow-md rounded-lg transition-all duration-300 ease-in-out transform group-hover:shadow-lg"
                 />
 
@@ -626,6 +628,8 @@ export default function Products() {
                   alt="Preserved Bouquet"
                   width={200}
                   height={200}
+                  quality={70}
+                  priority
                   className="object-cover w-full h-[150px] shadow-md rounded-lg transition-all duration-300 ease-in-out transform group-hover:shadow-lg"
                 />
 
@@ -652,6 +656,8 @@ export default function Products() {
                   alt={product.name}
                   width={300}
                   height={300}
+                  quality={70}
+                  priority
                   className="object-cover w-full h-full rounded-md"
                 />
               </div>
@@ -660,6 +666,9 @@ export default function Products() {
                 <h3 className="text-lg font-medium text-slate-800 mb-2">
                   {product.name}
                 </h3>
+                <p className="text-sm text-slate-500 mb-2">
+                  {product.name.includes("(ดอกเดี่ยว)") ? "กำมะหยี่" : "ดอกสดจัดช่อ"}
+                </p>
                 <div className="text-xl font-light text-slate-700 mb-4">
                   {product.price}฿
                 </div>
