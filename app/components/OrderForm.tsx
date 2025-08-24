@@ -103,6 +103,7 @@ export default function OrderForm({
         setOrderSuccess(true);
         console.log("Order submitted successfully:", result);
 
+
         try {
           const emailResponse = await fetch("/api/send-email", {
             method: "POST",

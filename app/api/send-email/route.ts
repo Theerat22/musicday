@@ -63,6 +63,7 @@ export async function POST(req: Request) {
     });
 
     console.log('Email sent successfully');
+    console.log(cart);
     return NextResponse.json({ 
       message: 'Email sent successfully',
       response: info.response 
