@@ -145,7 +145,7 @@ export default function Products() {
 
     const cartItem: CartItem = {
       id: Date.now(),
-      name: `ช่อ${currentBouquetType === "fresh" ? "ดอกไม้สด" : "กัมมะหยี่"}`,
+      name: `ช่อ${currentBouquetType === "fresh" ? "ดอกไม้สด" : "กำมะหยี่"}`,
       price: totalPrice,
       image: "",
       cartId: `bouquet-${Date.now()}`,
