@@ -311,7 +311,7 @@ const AdminFinancePage = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500">ส่งออเดอร์มาแล้ว</p>
-              <p className="text-2xl text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 {totalCustomers} คน
               </p>
             </div>
