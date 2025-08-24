@@ -127,10 +127,10 @@ export default function BouquetView({
           <div className="text-center mt-6">
             <button
               onClick={handleToggleShowAll}
-              className="text-blue-600 font-bold hover:underline"
+              className="text-blue-800 font-bold underline hover:underline"
               type="button"
             >
-              {showAllFlowers ? "แสดงน้อยลง" : "ดูเพิ่มเติม"}
+              {showAllFlowers ? "แสดงน้อยลง" : "ดูเพิ่ม"}
             </button>
           </div>
         )}

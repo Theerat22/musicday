@@ -84,18 +84,21 @@ export default function BouquetSummary({
           <span>{getTotalPrice().toLocaleString()} บาท</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="extra-carnations"
-          checked={hasExtraCarnations}
-          onChange={(e) => setHasExtraCarnations(e.target.checked)}
-          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-        />
-        <label htmlFor="extra-carnations" className="text-sm text-gray-700">
-          เพิ่มคาร์เนชั่น 3 ดอก (30 บาท)
-        </label>
-      </div>
+      {currentView === "fresh_bouquet" && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="extra-carnations"
+            checked={hasExtraCarnations}
+            onChange={(e) => setHasExtraCarnations(e.target.checked)}
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label htmlFor="extra-carnations" className="text-sm text-gray-700">
+            เพิ่มคาร์เนชั่น 3 ดอก (30 บาท)
+          </label>
+        </div>
+      )}
+
       <button
         onClick={handleOpenOptions} // Call the new validation function
         className="w-full mt-4 bg-black text-white py-2 rounded-md hover:bg-gray-800 transition-colors font-bold"

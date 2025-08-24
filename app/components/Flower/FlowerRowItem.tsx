@@ -1,7 +1,7 @@
 // components/FlowerRowItem.tsx
 import { Flower } from "./types";
 import QuantitySelector from "./QuantitySelector";
-
+import Image from "next/image";
 interface FlowerRowItemProps {
   flower: Flower;
   currentQuantity: number;
@@ -16,28 +16,40 @@ export default function FlowerRowItem({
   onQuantityChange,
 }: FlowerRowItemProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h3 className="font-medium text-lg mb-1">{flower.name}</h3>
-          {flower.id === 5 ? (
-            <p className="text-lg font-bold text-blue-900">
-              {flower.price.toLocaleString()} บาท / 3 ดอก
-            </p>
-          ) : (
-            <p className="text-lg font-bold text-blue-900">
-              {flower.price.toLocaleString()} บาท / ดอก
-            </p>
-          )}
-        </div>
-
-        <div className="flex-shrink-0 ml-4">
-          <QuantitySelector
-            flower={flower}
-            currentQuantity={currentQuantity}
-            maxAllowed={maxAllowed}
-            onQuantityChange={onQuantityChange}
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex items-center">
+      <div className="flex-shrink-0 mr-4">
+        <div className="w-24 h-24 bg-gray-50 rounded-md overflow-hidden">
+          <Image
+            src={`/flower/${flower.name}.jpg`}
+            alt={flower.name}
+            className="object-cover w-full h-full"
+            width={100}
+            height={100}
           />
+        </div>
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-lg mb-1">{flower.name}</h3>
+            {flower.id === 5 ? (
+              <p className="text-lg font-bold text-blue-900">
+                {flower.price.toLocaleString()} บาท / 3 ดอก
+              </p>
+            ) : (
+              <p className="text-lg font-bold text-blue-900">
+                {flower.price.toLocaleString()} บาท / ดอก
+              </p>
+            )}
+          </div>
+          <div className="flex-shrink-0 ml-4">
+            <QuantitySelector
+              flower={flower}
+              currentQuantity={currentQuantity}
+              maxAllowed={maxAllowed}
+              onQuantityChange={onQuantityChange}
+            />
+          </div>
         </div>
       </div>
     </div>
