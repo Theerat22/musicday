@@ -25,9 +25,9 @@ interface FinancialData {
 // -----------------
 
 const AdminPOSPage = () => {
-  const [activeTab, setActiveTab] = useState<
-    "pos" | "stock" | "financial"
-  >("pos");
+  const [activeTab, setActiveTab] = useState<"pos" | "stock" | "financial">(
+    "pos"
+  );
   const [products, setProducts] = useState<Product[]>([]);
   const [financialData, setFinancialData] = useState<FinancialData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +41,9 @@ const AdminPOSPage = () => {
     } catch (error) {
       console.error("Failed to fetch products:", error);
     }
+    const interval = setInterval(fetchProducts, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Function to fetch financial overview data
@@ -92,7 +95,8 @@ const AdminPOSPage = () => {
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            <ShoppingCart size={16} className="inline mr-1" /> บันทึกการขาย (POS)
+            <ShoppingCart size={16} className="inline mr-1" /> บันทึกการขาย
+            (POS)
           </button>
           <button
             onClick={() => setActiveTab("stock")}
@@ -125,7 +129,9 @@ const AdminPOSPage = () => {
         {activeTab === "stock" && (
           <StockManagement stockData={products} fetchProducts={fetchProducts} />
         )}
-        {activeTab === "financial" && <FinancialOverview data={financialData} />}
+        {activeTab === "financial" && (
+          <FinancialOverview data={financialData} />
+        )}
       </div>
     </div>
   );

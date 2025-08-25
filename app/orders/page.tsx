@@ -69,7 +69,8 @@ const AdminOrdersPage = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetchOrders();
+    const interval = setInterval(fetchOrders(), 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchOrders = async () => {

@@ -116,7 +116,7 @@ const POSEntry = ({ products, refreshData }: { products: Product[], refreshData:
             <div
               key={product.id}
               onClick={() => addToCart(product)}
-              className={`bg-gray-50 border p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer relative ${
+              className={`bg-gray-50 border border-gray-200 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer relative ${
                 product.stock_quantity <= 0
                   ? "opacity-50 pointer-events-none"
                   : ""
@@ -134,8 +134,8 @@ const POSEntry = ({ products, refreshData }: { products: Product[], refreshData:
               <p className="text-xs text-gray-600">
                 ฿{product.price}
               </p>
-              <p className={`text-xs font-semibold ${product.stock_quantity <= 5 ? 'text-red-500' : 'text-green-600'}`}>
-                Stock: {product.stock_quantity}
+              <p className={`text-xs font-bold ${product.stock_quantity <= 5 ? 'text-red-500' : 'text-green-600'}`}>
+                Stock: <span className="text-xs">{product.stock_quantity}</span>
               </p>
               {product.stock_quantity <= 0 && (
                 <span className="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-0.5 rounded-bl-lg">
