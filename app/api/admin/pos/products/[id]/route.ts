@@ -3,9 +3,9 @@ import { mysqlPool } from "@/utils/db";
 
 export async function PATCH(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Record<string, string> }
 ) {
-  const { id: productId } = context.params;
+  const productId = context.params.id;
   let quantity: number;
   let action: string;
 
@@ -23,15 +23,11 @@ export async function PATCH(
 
   if (
     !productId ||
-    typeof quantity === "undefined" ||
     typeof quantity !== "number" ||
     !action
   ) {
     return NextResponse.json(
-      {
-        error:
-          "Missing or invalid required fields: productId, quantity, or action",
-      },
+      { error: "Missing or invalid required fields" },
       { status: 400 }
     );
   }
