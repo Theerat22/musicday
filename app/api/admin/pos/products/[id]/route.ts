@@ -22,7 +22,8 @@ export async function PATCH(
     }
 
     let sql: string;
-    let values: any[];
+    // กำหนดประเภทของ values เป็น Array<string | number> เพื่อให้ถูกหลัก TypeScript
+    let values: Array<string | number>;
 
     if (action === "increase") {
       sql = `
@@ -37,7 +38,8 @@ export async function PATCH(
         SET stock_quantity = GREATEST(stock_quantity - ?, 0)
         WHERE product_id = ?
       `;
-      values = [quantity, productId];
+      // ใน MySQL query นี้ ลำดับของค่าที่ส่งคือ [quantity, productId]
+      values = [quantity, productId]; 
     } else {
       // action === "set"
       sql = `
@@ -51,8 +53,11 @@ export async function PATCH(
     const [result] = await mysqlPool.query<ResultSetHeader>(sql, values);
 
     if (result.affectedRows === 0) {
+      // หมายเหตุ: สำหรับ 'increase' หรือ 'set' ที่มีการ 'INSERT ... ON DUPLICATE KEY UPDATE'
+      // affectedRows จะเป็น 1 สำหรับ INSERT หรือ 2 สำหรับ UPDATE (ใน MySQL2)
+      // ดังนั้นการเช็ค 0 อาจใช้ได้เฉพาะกับ 'decrease' ที่เป็น UPDATE
       return NextResponse.json(
-        { error: "Product not found" },
+        { error: "Product not found or not affected" },
         { status: 404 }
       );
     }
@@ -63,10 +68,16 @@ export async function PATCH(
       quantity,
       action,
     });
-  } catch (error) {
+  } catch (error: unknown) { // ใช้ unknown แทน any
+    // ในการจัดการ error: unknown ต้องตรวจสอบประเภทก่อนใช้งาน
+    let errorMessage = "Failed to update stock";
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    
     console.error("Database error:", error);
     return NextResponse.json(
-      { error: "Failed to update stock" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
