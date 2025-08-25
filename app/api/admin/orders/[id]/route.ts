@@ -4,8 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
 import { ResultSetHeader } from "mysql2";
 
-// Make sure to include this type definition
-type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
+type OrderStatus = "pending" | "confirmed" | "completed" | "delivered" | "cancelled";
 
 export async function PATCH(
   request: NextRequest,
@@ -13,12 +12,13 @@ export async function PATCH(
 ) {
   try {
     const { status } = (await request.json()) as { status: OrderStatus };
-    const { id: orderId } = await context.params; // เพิ่ม await ที่นี่
+    const { id: orderId } = await context.params;
 
     const validStatuses: OrderStatus[] = [
       "pending",
       "confirmed",
       "completed",
+      "delivered",
       "cancelled",
     ];
     if (!validStatuses.includes(status)) {

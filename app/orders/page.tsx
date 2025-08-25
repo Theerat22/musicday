@@ -31,7 +31,13 @@ interface OrderItem {
   bouquet_details: BouquetDetail[];
 }
 
-type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
+// ✅ แก้ไข: เพิ่ม 'delivered' ใน OrderStatus
+type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "delivered"
+  | "cancelled";
 
 interface Order {
   id: number;
@@ -161,10 +167,17 @@ const AdminOrdersPage = () => {
         icon: Check,
         text: "ยืนยันแล้ว",
       },
+      // ✅ แก้ไข: completed คือ 'ทำออเดอร์แล้ว'
       completed: {
+        color: "bg-purple-100 text-purple-800", // เปลี่ยนเป็นสีม่วง
+        icon: Package,
+        text: "ทำออเดอร์แล้ว",
+      },
+      // ✅ เพิ่ม: delivered คือ 'มารับแล้ว'
+      delivered: {
         color: "bg-green-100 text-green-800",
         icon: Package,
-        text: "เสร็จสิ้น",
+        text: "มารับแล้ว",
       },
       cancelled: { color: "bg-red-100 text-red-800", icon: X, text: "ยกเลิก" },
     };
@@ -186,12 +199,15 @@ const AdminOrdersPage = () => {
   const getNextStatus = (currentStatus: OrderStatus) => {
     if (currentStatus === "pending") return "confirmed";
     if (currentStatus === "confirmed") return "completed";
+    // ✅ แก้ไข: เพิ่มขั้นตอน confirmed -> delivered
+    if (currentStatus === "completed") return "delivered";
     return null;
   };
 
   const getStatusButtonText = (status: OrderStatus) => {
     if (status === "pending") return "ยืนยันสลิป";
-    if (status === "confirmed") return "มารับของ";
+    if (status === "confirmed") return "ทำออเดอร์"; // ✅ แก้ไข
+    if (status === "completed") return "มารับของ"; // ✅ แก้ไข
     return null;
   };
 
@@ -289,15 +305,27 @@ const AdminOrdersPage = () => {
               >
                 ยืนยันแล้ว ({statusCounts.confirmed || 0})
               </button>
+              {/* ✅ แก้ไข: เปลี่ยนสีปุ่ม completed */}
               <button
                 onClick={() => setStatusFilter("completed")}
                 className={`px-3 py-1.5 text-sm rounded-full font-medium transition-colors ${
                   statusFilter === "completed"
+                    ? "bg-purple-600 text-white"
+                    : "bg-purple-100 text-purple-800 hover:bg-purple-200"
+                }`}
+              >
+                ทำออเดอร์แล้ว ({statusCounts.completed || 0})
+              </button>
+              {/* ✅ เพิ่ม: ปุ่ม delivered */}
+              <button
+                onClick={() => setStatusFilter("delivered")}
+                className={`px-3 py-1.5 text-sm rounded-full font-medium transition-colors ${
+                  statusFilter === "delivered"
                     ? "bg-green-600 text-white"
                     : "bg-green-100 text-green-800 hover:bg-green-200"
                 }`}
               >
-                เสร็จสิ้น ({statusCounts.completed || 0})
+                มารับแล้ว ({statusCounts.delivered || 0})
               </button>
               <button
                 onClick={() => setStatusFilter("cancelled")}
