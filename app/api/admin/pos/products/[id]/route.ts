@@ -1,61 +1,68 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
+import { ResultSetHeader } from "mysql2";
 
 export async function PATCH(
-  request: Request,
-  context: { params: Record<string, string> }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
-  const productId = context.params.id;
-  let quantity: number;
-  let action: string;
-
   try {
-    const body = await request.json();
-    quantity = body.quantity;
-    action = body.action;
-  } catch (e) {
-    console.error("Error parsing request body:", e);
-    return NextResponse.json(
-      { error: "Invalid or missing JSON body" },
-      { status: 400 }
-    );
-  }
+    const { quantity, action } = (await request.json()) as {
+      quantity: number;
+      action: "increase" | "decrease" | "set";
+    };
 
-  if (
-    !productId ||
-    typeof quantity !== "number" ||
-    !action
-  ) {
-    return NextResponse.json(
-      { error: "Missing or invalid required fields" },
-      { status: 400 }
-    );
-  }
+    const { id: productId } = context.params;
 
-  try {
-    const conn = await mysqlPool.getConnection();
-    await conn.beginTransaction();
-
-    try {
-      await conn.query(
-        `INSERT INTO pos_product_stock (product_id, stock_quantity)
-         VALUES (?, ?)
-         ON DUPLICATE KEY UPDATE stock_quantity = ?`,
-        [productId, quantity, quantity]
-      );
-
-      await conn.commit();
-      conn.release();
-
+    if (!productId || typeof quantity !== "number" || !action) {
       return NextResponse.json(
-        { message: "Stock updated successfully" },
-        { status: 200 }
+        { error: "Missing or invalid required fields" },
+        { status: 400 }
       );
-    } catch (error) {
-      await conn.rollback();
-      conn.release();
-      throw error;
     }
+
+    let sql: string;
+    let values: any[];
+
+    if (action === "increase") {
+      sql = `
+        INSERT INTO pos_product_stock (product_id, stock_quantity)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE stock_quantity = stock_quantity + VALUES(stock_quantity)
+      `;
+      values = [productId, quantity];
+    } else if (action === "decrease") {
+      sql = `
+        UPDATE pos_product_stock
+        SET stock_quantity = GREATEST(stock_quantity - ?, 0)
+        WHERE product_id = ?
+      `;
+      values = [quantity, productId];
+    } else {
+      // action === "set"
+      sql = `
+        INSERT INTO pos_product_stock (product_id, stock_quantity)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE stock_quantity = VALUES(stock_quantity)
+      `;
+      values = [productId, quantity];
+    }
+
+    const [result] = await mysqlPool.query<ResultSetHeader>(sql, values);
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      message: "Stock updated successfully",
+      productId,
+      quantity,
+      action,
+    });
   } catch (error) {
     console.error("Database error:", error);
     return NextResponse.json(
