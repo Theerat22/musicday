@@ -2,14 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
 import { ResultSetHeader } from "mysql2";
 
-// กำหนดประเภทที่ถูกต้องสำหรับ context
-interface RouteContext {
-  params: {
-    id: string; // ไม่ต้องเป็น Promise
-  };
-}
-
-// กำหนดประเภทของ Body
+// This interface is now optional, but still good for clarity of the request body
 interface UpdateStockBody {
   quantity: number;
   action: "increase" | "decrease" | "set";
@@ -17,13 +10,12 @@ interface UpdateStockBody {
 
 export async function PATCH(
   request: NextRequest,
-  context: RouteContext // ใช้ประเภทที่ถูกต้อง
+  // 💡 THE FIX: Define the required type inline instead of using the custom interface
+  context: { params: { id: string } } 
 ) {
   try {
-    // กำหนดประเภทให้กับ await request.json()
     const { quantity, action } = (await request.json()) as UpdateStockBody;
 
-    // ดึง id จาก context.params โดยตรง ไม่ต้องใช้ await
     const { id: productId } = context.params;
 
     if (!productId || typeof quantity !== "number" || !action) {
@@ -34,7 +26,6 @@ export async function PATCH(
     }
 
     let sql: string;
-    // ใช้ Array<string | number> แทน any[]
     let values: Array<string | number>; 
 
     if (action === "increase") {
@@ -63,9 +54,7 @@ export async function PATCH(
 
     const [result] = await mysqlPool.query<ResultSetHeader>(sql, values);
 
-    // ตรวจสอบว่ามีการเปลี่ยนแปลงเกิดขึ้นหรือไม่
     if (result.affectedRows === 0 && action === "decrease") {
-      // ตรวจสอบเฉพาะ 'decrease' ที่ใช้ UPDATE
       return NextResponse.json(
         { error: "Product not found" },
         { status: 404 }
@@ -78,10 +67,9 @@ export async function PATCH(
       quantity,
       action,
     });
-  } catch (error: unknown) { // ใช้ unknown แทน any ใน catch block
+  } catch (error: unknown) { 
     console.error("Database error:", error);
     
-    // จัดการ error: unknown เพื่อดึงข้อความหากมี
     let errorMessage = "Failed to update stock";
     if (error instanceof Error) {
         errorMessage = error.message;
