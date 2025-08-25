@@ -2,16 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
 import { ResultSetHeader } from "mysql2";
 
+// กำหนดประเภทที่ถูกต้องสำหรับ context
+interface RouteContext {
+  params: {
+    id: string; // ไม่ต้องเป็น Promise
+  };
+}
+
+// กำหนดประเภทของ Body
+interface UpdateStockBody {
+  quantity: number;
+  action: "increase" | "decrease" | "set";
+}
+
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: RouteContext // ใช้ประเภทที่ถูกต้อง
 ) {
   try {
-    const { quantity, action } = (await request.json()) as {
-      quantity: number;
-      action: "increase" | "decrease" | "set";
-    };
+    // กำหนดประเภทให้กับ await request.json()
+    const { quantity, action } = (await request.json()) as UpdateStockBody;
 
+    // ดึง id จาก context.params โดยตรง ไม่ต้องใช้ await
     const { id: productId } = context.params;
 
     if (!productId || typeof quantity !== "number" || !action) {
@@ -22,8 +34,8 @@ export async function PATCH(
     }
 
     let sql: string;
-    // กำหนดประเภทของ values เป็น Array<string | number> เพื่อให้ถูกหลัก TypeScript
-    let values: Array<string | number>;
+    // ใช้ Array<string | number> แทน any[]
+    let values: Array<string | number>; 
 
     if (action === "increase") {
       sql = `
@@ -38,8 +50,7 @@ export async function PATCH(
         SET stock_quantity = GREATEST(stock_quantity - ?, 0)
         WHERE product_id = ?
       `;
-      // ใน MySQL query นี้ ลำดับของค่าที่ส่งคือ [quantity, productId]
-      values = [quantity, productId]; 
+      values = [quantity, productId];
     } else {
       // action === "set"
       sql = `
@@ -52,12 +63,11 @@ export async function PATCH(
 
     const [result] = await mysqlPool.query<ResultSetHeader>(sql, values);
 
-    if (result.affectedRows === 0) {
-      // หมายเหตุ: สำหรับ 'increase' หรือ 'set' ที่มีการ 'INSERT ... ON DUPLICATE KEY UPDATE'
-      // affectedRows จะเป็น 1 สำหรับ INSERT หรือ 2 สำหรับ UPDATE (ใน MySQL2)
-      // ดังนั้นการเช็ค 0 อาจใช้ได้เฉพาะกับ 'decrease' ที่เป็น UPDATE
+    // ตรวจสอบว่ามีการเปลี่ยนแปลงเกิดขึ้นหรือไม่
+    if (result.affectedRows === 0 && action === "decrease") {
+      // ตรวจสอบเฉพาะ 'decrease' ที่ใช้ UPDATE
       return NextResponse.json(
-        { error: "Product not found or not affected" },
+        { error: "Product not found" },
         { status: 404 }
       );
     }
@@ -68,14 +78,15 @@ export async function PATCH(
       quantity,
       action,
     });
-  } catch (error: unknown) { // ใช้ unknown แทน any
-    // ในการจัดการ error: unknown ต้องตรวจสอบประเภทก่อนใช้งาน
+  } catch (error: unknown) { // ใช้ unknown แทน any ใน catch block
+    console.error("Database error:", error);
+    
+    // จัดการ error: unknown เพื่อดึงข้อความหากมี
     let errorMessage = "Failed to update stock";
     if (error instanceof Error) {
         errorMessage = error.message;
     }
-    
-    console.error("Database error:", error);
+
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }
