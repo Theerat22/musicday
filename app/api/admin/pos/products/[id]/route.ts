@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
 
-// Define the interface for the second argument (context) separately
-// This is done to ensure the function signature remains clean and standard.
-interface RouteContext {
-  params: {
-    id: string;
-  };
-}
-
 export async function PATCH(
   request: Request,
-  // Use the defined interface for the context object. 
-  // This structure (Request, ContextObject) is the standard App Router pattern.
-  context: RouteContext 
+  // This is the clean, minimal inline typing that Next.js expects.
+  // It avoids naming an external type ("RouteContext").
+  { params }: { params: { id: string } } 
 ) {
-  const productId = context.params.id;
+  const productId = params.id;
   let quantity: number;
   let action: string;
 
@@ -25,9 +17,8 @@ export async function PATCH(
     quantity = body.quantity;
     action = body.action;
   } catch (e) {
-    // Corrected the console log to use the variable `e` instead of 'e'
-    // This addresses the "Warning: 'e' is defined but never used" in the build output
-    console.error("Error parsing request body:", e);
+    // Corrected to use 'e' and avoid the 'unused variable' warning.
+    console.error("Error parsing request body:", e); 
     return NextResponse.json(
       { error: "Invalid or missing JSON body" },
       { status: 400 }
