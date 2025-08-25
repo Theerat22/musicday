@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
 
+// Define the interface for the second argument (context) separately
+// This is done to ensure the function signature remains clean and standard.
+interface RouteContext {
+  params: {
+    id: string;
+  };
+}
+
 export async function PATCH(
   request: Request,
-  // The clean and widely accepted inline type for the context/params argument
-  { params }: { params: { id: string } } 
+  // Use the defined interface for the context object. 
+  // This structure (Request, ContextObject) is the standard App Router pattern.
+  context: RouteContext 
 ) {
-  const productId = params.id;
+  const productId = context.params.id;
   let quantity: number;
   let action: string;
 
@@ -16,6 +25,9 @@ export async function PATCH(
     quantity = body.quantity;
     action = body.action;
   } catch (e) {
+    // Corrected the console log to use the variable `e` instead of 'e'
+    // This addresses the "Warning: 'e' is defined but never used" in the build output
+    console.error("Error parsing request body:", e);
     return NextResponse.json(
       { error: "Invalid or missing JSON body" },
       { status: 400 }
@@ -25,7 +37,7 @@ export async function PATCH(
   // Type check the required fields
   if (!productId || typeof quantity === 'undefined' || typeof quantity !== 'number' || !action) {
     return NextResponse.json(
-      { error: "Missing or invalid required fields: productId (string), quantity (number), or action (string)" },
+      { error: "Missing or invalid required fields: productId, quantity, or action" },
       { status: 400 }
     );
   }
@@ -35,8 +47,7 @@ export async function PATCH(
     await conn.beginTransaction();
 
     try {
-      // Your existing database logic
-      // Note: This logic SETS the stock_quantity, it doesn't add/subtract.
+      // Database logic
       await conn.query(
         `INSERT INTO pos_product_stock (product_id, stock_quantity)
          VALUES (?, ?)
