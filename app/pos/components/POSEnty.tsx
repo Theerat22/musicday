@@ -19,7 +19,7 @@ interface CartItem extends Product {
 
 const POSEntry = ({ products, refreshData }: { products: Product[], refreshData: () => void }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
+  const [paymentMethod] = useState<string>("cash");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const totalAmount = useMemo(() => {
@@ -127,6 +127,8 @@ const POSEntry = ({ products, refreshData }: { products: Product[], refreshData:
                   src={product.image || "/placeholder-product.png"}
                   alt={product.name}
                   fill
+                  quality={50}
+                  priority
                   style={{ objectFit: "cover" }}
                 />
               </div>
@@ -161,7 +163,7 @@ const POSEntry = ({ products, refreshData }: { products: Product[], refreshData:
             cart.map((item) => (
               <div
                 key={item.id}
-                className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border"
+                className="flex justify-between items-center bg-white  p-3 rounded-lg border border-gray-200 "
               >
                 <div className="flex-1 min-w-0 pr-2">
                   <p className="font-medium text-sm truncate">{item.name}</p>
@@ -195,20 +197,6 @@ const POSEntry = ({ products, refreshData }: { products: Product[], refreshData:
 
         <div className="mt-4 pt-4 border-t border-gray-200">
           {/* Payment Method */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              วิธีการชำระเงิน
-            </label>
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="cash">เงินสด</option>
-              <option value="transfer">โอนเงิน</option>
-              <option value="credit">บัตรเครดิต</option>
-            </select>
-          </div>
 
           <div className="flex justify-between items-center mb-4">
             <span className="text-lg font-bold text-gray-800">ยอดรวมสุทธิ:</span>
