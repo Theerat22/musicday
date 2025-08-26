@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
 import { ResultSetHeader } from "mysql2";
 
-// This interface is now optional, but still good for clarity of the request body
 interface UpdateStockBody {
   quantity: number;
   action: "increase" | "decrease" | "set";
@@ -10,13 +9,13 @@ interface UpdateStockBody {
 
 export async function PATCH(
   request: NextRequest,
-  // 💡 THE FIX: Define the required type inline instead of using the custom interface
-  context: { params: { id: string } } 
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { quantity, action } = (await request.json()) as UpdateStockBody;
-
-    const { id: productId } = context.params;
+    
+    // 🔧 FIX: Await the params Promise
+    const { id: productId } = await context.params;
 
     if (!productId || typeof quantity !== "number" || !action) {
       return NextResponse.json(
@@ -26,7 +25,7 @@ export async function PATCH(
     }
 
     let sql: string;
-    let values: Array<string | number>; 
+    let values: Array<string | number>;
 
     if (action === "increase") {
       sql = `
@@ -67,12 +66,12 @@ export async function PATCH(
       quantity,
       action,
     });
-  } catch (error: unknown) { 
+  } catch (error: unknown) {
     console.error("Database error:", error);
-    
+
     let errorMessage = "Failed to update stock";
     if (error instanceof Error) {
-        errorMessage = error.message;
+      errorMessage = error.message;
     }
 
     return NextResponse.json(
