@@ -33,7 +33,12 @@ interface OrderItem {
   bouquet_details: BouquetDetail[];
 }
 
-type OrderStatus = "pending" | "confirmed" | "completed" | "delivered" | "cancelled";
+type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "delivered"
+  | "cancelled";
 
 interface Order {
   id: number;
@@ -106,7 +111,7 @@ const AdminFinancePage = () => {
       pending: 0,
       confirmed: 0,
       delivered: 0,
-      completed: 0
+      completed: 0,
     };
     const customerIds = new Set<string>();
 
@@ -118,29 +123,31 @@ const AdminFinancePage = () => {
       customerIds.add(order.order_number);
 
       totalRevenue += Number(order.total_price);
-      
 
       order.items.forEach((item) => {
         // ตรวจสอบประเภทสินค้าที่ชัดเจน
-        const isFreshProduct = item.product_name.includes("ช่อดอกไม้สด") || item.product_name.includes("ช่อลิลลี่");
-        const isVelvetProduct = item.product_name.includes("ช่อกำมะหยี่") || item.cart_id.includes("single");
-        
+        const isFreshProduct =
+          item.product_name.includes("ช่อดอกไม้สด") ||
+          item.product_name.includes("ช่อลิลลี่");
+        const isVelvetProduct =
+          item.product_name.includes("ช่อกำมะหยี่") ||
+          item.cart_id.includes("single");
+
         // คำนวณรายได้แต่ละประเภท และนับจำนวนดอกไม้
-        if (order.status === "confirmed" || order.status === "completed") {
-            const itemPrice = Number(item.price);
-            if (isFreshProduct) {
-                freshFlowerRevenue += itemPrice;
-            } else if (isVelvetProduct) {
-                velvetFlowerRevenue += itemPrice;
-            }
+
+        const itemPrice = Number(item.price);
+        if (isFreshProduct) {
+          freshFlowerRevenue += itemPrice;
+        } else if (isVelvetProduct) {
+          velvetFlowerRevenue += itemPrice;
         }
 
         if (item.bouquet_details && item.bouquet_details.length > 0) {
           // ถ้ามีรายละเอียดดอกไม้ในช่อ ให้วนลูปนับจาก bouquet_details
-          item.bouquet_details.forEach(flower => {
+          item.bouquet_details.forEach((flower) => {
             const currentFlowerName = flower.flower_name.trim();
             const quantity = flower.quantity;
-            
+
             // ใช้ logic แยกประเภทจาก item หลัก
             if (isVelvetProduct) {
               const existingVelvet = velvetFlowers.get(currentFlowerName);
@@ -232,7 +239,7 @@ const AdminFinancePage = () => {
             Dashboard pre-order
           </h1>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm mb-6">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -299,7 +306,7 @@ const AdminFinancePage = () => {
             </div>
           )}
         </div>
-        
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4 flex items-center gap-4">
