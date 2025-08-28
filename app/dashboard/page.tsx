@@ -33,7 +33,7 @@ interface OrderItem {
   bouquet_details: BouquetDetail[];
 }
 
-type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
+type OrderStatus = "pending" | "confirmed" | "completed" | "delivered" | "cancelled";
 
 interface Order {
   id: number;
@@ -105,19 +105,20 @@ const AdminFinancePage = () => {
     const statusCounts = {
       pending: 0,
       confirmed: 0,
-      completed: 0,
+      delivered: 0,
+      completed: 0
     };
     const customerIds = new Set<string>();
 
     filteredOrders.forEach((order) => {
       if (order.status === "pending") statusCounts.pending++;
       if (order.status === "confirmed") statusCounts.confirmed++;
+      if (order.status === "delivered") statusCounts.delivered++;
       if (order.status === "completed") statusCounts.completed++;
       customerIds.add(order.order_number);
 
-      if (order.status === "confirmed" || order.status === "completed") {
-        totalRevenue += Number(order.total_price);
-      }
+      totalRevenue += Number(order.total_price);
+      
 
       order.items.forEach((item) => {
         // ตรวจสอบประเภทสินค้าที่ชัดเจน
@@ -317,9 +318,9 @@ const AdminFinancePage = () => {
               <Clock size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-500">รอทำดอกไม้</p>
+              <p className="text-sm text-gray-500">ยืนยันสลิปแล้ว</p>
               <p className="text-2xl font-bold text-gray-900">
-                {statusCounts.pending} ออร์เดอร์
+                {statusCounts.confirmed} ออร์เดอร์
               </p>
             </div>
           </div>
@@ -330,7 +331,7 @@ const AdminFinancePage = () => {
             <div>
               <p className="text-sm text-gray-500">ทำออเดอร์เสร็จแล้ว</p>
               <p className="text-2xl font-bold text-gray-900">
-                {statusCounts.confirmed} ออร์เดอร์
+                {statusCounts.completed} ออร์เดอร์
               </p>
             </div>
           </div>
@@ -341,7 +342,7 @@ const AdminFinancePage = () => {
             <div>
               <p className="text-sm text-gray-500">มารับของแล้ว</p>
               <p className="text-2xl font-bold text-gray-900">
-                {statusCounts.completed} ออร์เดอร์
+                {statusCounts.delivered} ออร์เดอร์
               </p>
             </div>
           </div>
@@ -354,10 +355,6 @@ const AdminFinancePage = () => {
                 <h2 className="text-xl font-semibold text-gray-900">
                   ภาพรวมยอดขาย
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  ยอดขายจากคำสั่งซื้อที่ **ยืนยันแล้ว** และ **เสร็จสิ้น**
-                  เท่านั้น
-                </p>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-blue-50 p-4 rounded-lg flex items-center gap-4">
