@@ -25,7 +25,7 @@ interface FinancialData {
 // -----------------
 
 const AdminPOSPage = () => {
-  const [activeTab, setActiveTab] = useState<"pos" | "stock" | "financial">(
+  const [activeTab, setActiveTab] = useState<"pos" | "stock" | "financial" | "order">(
     "pos"
   );
   const [products, setProducts] = useState<Product[]>([]);
@@ -41,7 +41,7 @@ const AdminPOSPage = () => {
     } catch (error) {
       console.error("Failed to fetch products:", error);
     }
-    const interval = setInterval(fetchProducts, 10000);
+    const interval = setInterval(fetchProducts, 100000);
 
     return () => clearInterval(interval);
   }, []);
