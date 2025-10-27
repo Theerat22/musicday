@@ -24,11 +24,11 @@ const FinancialOverview = ({ data }: { data: FinancialData[] }) => {
 
   const totalProfit = useMemo(() => {
     return (
-      data.reduce((sum, item) => sum + Number(item.total_revenue), 0) - 4917
+      data.reduce((sum, item) => sum + Number(item.total_revenue), 0) - 59712
     );
   }, [data]);
 
-  const remain = 1600 - totalItemsSold;
+  const remain = 2000 - totalItemsSold;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
