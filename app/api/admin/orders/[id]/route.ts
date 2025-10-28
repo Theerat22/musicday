@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+// --- 🟨 FIX 3 ---
+// นำ NextRequest กลับมา import เพราะตัวอย่างใหม่ของคุณก็ใช้
 import type { NextRequest } from "next/server";
 import { mysqlPool } from "@/utils/db";
 import type { ResultSetHeader, PoolConnection } from "mysql2/promise";
@@ -19,11 +21,22 @@ const ALLOWED_STATUSES: OrderStatus[] = [
   "cancelled",
 ];
 
+type RouteContext = {
+  params: Promise<{
+    id: string; // "id" ในที่นี้คือ order_id (string "MD...")
+  }>;
+};
+
 export async function PATCH(
+  // --- 🟨 FIX 3 ---
+  // เปลี่ยนกลับไปใช้ NextRequest ตามตัวอย่างของคุณ
   req: NextRequest,
-  { params }: { params: { id: string } } // "id" ในที่นี้คือ order_id (string "MD...")
+  context: RouteContext // ใช้งาน Type ที่อัปเดตแล้ว
 ) {
-  const { id: orderId } = params; // เปลี่ยนชื่อตัวแปรเพื่อความชัดเจน
+  
+  // --- 🟨 FIX 3 ---
+  // เราต้อง await context.params ก่อน ถึงจะดึง id ออกมาได้
+  const { id: orderId } = await context.params;
   let connection: PoolConnection | undefined;
 
   try {
@@ -44,8 +57,8 @@ export async function PATCH(
     }
 
     connection = await mysqlPool.getConnection();
-    
-    // --- 🟨 FIX ---
+
+    // --- (ส่วนนี้ของคุณถูกต้องอยู่แล้ว) ---
     // เปลี่ยน WHERE id = ? (ตัวเลข)
     // เป็น WHERE order_id = ? (ข้อความ)
     const [result] = await connection.execute<ResultSetHeader>(
