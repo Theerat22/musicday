@@ -9,29 +9,18 @@ import {
   Filter,
   Search,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 
-interface BouquetDetail {
-  flower_id: number;
-  flower_name: string;
-  flower_color: string;
-  flower_price: number;
-  quantity: number;
-}
-
 interface OrderItem {
-  id: number;
   product_id: number | null;
   product_name: string;
-  price: number;
-  color: string;
-  wrapping: string;
-  cart_id: string;
-  bouquet_details: BouquetDetail[];
+  item_price: number;
+  quantity: number;
+  product_option: string | null;
 }
 
-// ✅ แก้ไข: เพิ่ม 'delivered' ใน OrderStatus
 type OrderStatus =
   | "pending"
   | "confirmed"
@@ -40,18 +29,13 @@ type OrderStatus =
   | "cancelled";
 
 interface Order {
-  id: number;
-  order_number: string;
-  first_name: string;
-  last_name: string;
-  nickname: string;
-  grade: string;
+  order_id: string; // "MD..."
+  customer_name: string;
+  customer_contact: string;
   total_price: number;
   slip_image_url: string | null;
   order_date: string;
   status: OrderStatus;
-  created_at: string;
-  updated_at: string;
   items: OrderItem[];
 }
 
@@ -59,7 +43,7 @@ const AdminOrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<number | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null); // (string "MD...")
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -74,7 +58,11 @@ const AdminOrdersPage = () => {
 
   const fetchOrders = async () => {
     try {
+      setLoading(true);
       const response = await fetch("/api/admin/orders");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
       const data: Order[] = await response.json();
       setOrders(data);
     } catch (error) {
@@ -95,11 +83,9 @@ const AdminOrdersPage = () => {
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         const matchesSearch =
-          order.order_number.toLowerCase().includes(searchLower) ||
-          order.first_name.toLowerCase().includes(searchLower) ||
-          order.last_name.toLowerCase().includes(searchLower) ||
-          order.nickname.toLowerCase().includes(searchLower) ||
-          order.grade.toLowerCase().includes(searchLower);
+          order.order_id.toLowerCase().includes(searchLower) ||
+          order.customer_name.toLowerCase().includes(searchLower) ||
+          order.customer_contact.toLowerCase().includes(searchLower);
 
         if (!matchesSearch) return false;
       }
@@ -115,8 +101,8 @@ const AdminOrdersPage = () => {
     });
   }, [orders, statusFilter, searchTerm, dateFrom, dateTo]);
 
-  const updateOrderStatus = async (orderId: number, newStatus: string) => {
-    setUpdating(orderId);
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    setUpdating(orderId); // orderId คือ string ("MD...")
     try {
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
@@ -129,20 +115,21 @@ const AdminOrdersPage = () => {
       if (response.ok) {
         setOrders(
           orders.map((order) =>
-            order.id === orderId
-              ? { ...order, status: newStatus as OrderStatus }
-              : order
+            order.order_id === orderId ? { ...order, status: newStatus } : order
           )
         );
-        if (selectedOrder && selectedOrder.id === orderId) {
+        if (selectedOrder && selectedOrder.order_id === orderId) {
           setSelectedOrder({
             ...selectedOrder,
-            status: newStatus as OrderStatus,
+            status: newStatus,
           });
         }
+      } else {
+        throw new Error("Failed to update status");
       }
     } catch (error) {
       console.error("Failed to update order status:", error);
+      alert("ไม่สามารถอัปเดตสถานะได้");
     } finally {
       setUpdating(null);
     }
@@ -165,15 +152,13 @@ const AdminOrdersPage = () => {
       confirmed: {
         color: "bg-blue-100 text-blue-800",
         icon: Check,
-        text: "ยืนยันแล้ว",
+        text: "ยืนยืนแล้ว",
       },
-      // ✅ แก้ไข: completed คือ 'ทำออเดอร์แล้ว'
       completed: {
-        color: "bg-purple-100 text-purple-800", // เปลี่ยนเป็นสีม่วง
+        color: "bg-purple-100 text-purple-800",
         icon: Package,
         text: "ทำออเดอร์แล้ว",
       },
-      // ✅ เพิ่ม: delivered คือ 'มารับแล้ว'
       delivered: {
         color: "bg-green-100 text-green-800",
         icon: Package,
@@ -199,15 +184,14 @@ const AdminOrdersPage = () => {
   const getNextStatus = (currentStatus: OrderStatus) => {
     if (currentStatus === "pending") return "confirmed";
     if (currentStatus === "confirmed") return "completed";
-    // ✅ แก้ไข: เพิ่มขั้นตอน confirmed -> delivered
     if (currentStatus === "completed") return "delivered";
     return null;
   };
 
   const getStatusButtonText = (status: OrderStatus) => {
     if (status === "pending") return "ยืนยันสลิป";
-    if (status === "confirmed") return "ทำออเดอร์"; // ✅ แก้ไข
-    if (status === "completed") return "มารับของ"; // ✅ แก้ไข
+    if (status === "confirmed") return "ทำออเดอร์เสร็จ";
+    if (status === "completed") return "ยืนยันรับของ";
     return null;
   };
 
@@ -224,7 +208,7 @@ const AdminOrdersPage = () => {
       minute: "2-digit",
     });
   };
-
+  
   const statusCounts = useMemo(() => {
     return orders.reduce(
       (counts, order) => {
@@ -236,10 +220,11 @@ const AdminOrdersPage = () => {
     );
   }, [orders]);
 
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <Loader2 className="animate-spin text-blue-600" size={48} />
       </div>
     );
   }
@@ -271,8 +256,7 @@ const AdminOrdersPage = () => {
               </button>
             </div>
           </div>
-
-          {/* Quick Status Filter - Always visible */}
+          {/* Quick Status Filter */}
           <div className="p-4">
             <div className="flex flex-wrap gap-2">
               <button
@@ -305,7 +289,6 @@ const AdminOrdersPage = () => {
               >
                 ยืนยันแล้ว ({statusCounts.confirmed || 0})
               </button>
-              {/* ✅ แก้ไข: เปลี่ยนสีปุ่ม completed */}
               <button
                 onClick={() => setStatusFilter("completed")}
                 className={`px-3 py-1.5 text-sm rounded-full font-medium transition-colors ${
@@ -316,7 +299,6 @@ const AdminOrdersPage = () => {
               >
                 ทำออเดอร์แล้ว ({statusCounts.completed || 0})
               </button>
-              {/* ✅ เพิ่ม: ปุ่ม delivered */}
               <button
                 onClick={() => setStatusFilter("delivered")}
                 className={`px-3 py-1.5 text-sm rounded-full font-medium transition-colors ${
@@ -339,7 +321,6 @@ const AdminOrdersPage = () => {
               </button>
             </div>
           </div>
-
           {/* Advanced Filters */}
           {showFilters && (
             <div className="p-4 border-t border-gray-200 bg-gray-50">
@@ -356,14 +337,13 @@ const AdminOrdersPage = () => {
                     />
                     <input
                       type="text"
-                      placeholder="หมายเลขออเดอร์, ชื่อ, ชื่อเล่น, ชั้น"
+                      placeholder="หมายเลขออเดอร์, ชื่อ, ชั้น"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
-
                 {/* Date From */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -382,7 +362,6 @@ const AdminOrdersPage = () => {
                     />
                   </div>
                 </div>
-
                 {/* Date To */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -402,7 +381,6 @@ const AdminOrdersPage = () => {
                   </div>
                 </div>
               </div>
-
               {/* Clear Filters */}
               {(statusFilter !== "all" || searchTerm || dateFrom || dateTo) && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
@@ -428,19 +406,23 @@ const AdminOrdersPage = () => {
                 </h2>
               </div>
               <div className="divide-y divide-gray-200">
+                {/* 🟨 FIX 1: เปลี่ยน key={order.id} เป็น key={order.order_id} */}
                 {filteredOrders.map((order) => (
                   <div
-                    key={order.id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    key={order.order_id} // (key "MD...")
+                    className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedOrder(order)}
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="font-medium text-gray-900">
-                          #{order.order_number}
+                          #{order.order_id}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          {order.first_name} {order.last_name} ({order.nickname}
-                          ) - ชั้น {order.grade}
+                          {order.customer_name}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {order.customer_contact}
                         </p>
                       </div>
                       {getStatusBadge(order.status)}
@@ -455,7 +437,10 @@ const AdminOrdersPage = () => {
 
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrder(order);
+                          }}
                           className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
                         >
                           <Eye size={14} />
@@ -464,17 +449,18 @@ const AdminOrdersPage = () => {
 
                         {getNextStatus(order.status) && (
                           <button
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               updateOrderStatus(
-                                order.id,
+                                order.order_id, // (string "MD...")
                                 getNextStatus(order.status)!
-                              )
-                            }
-                            disabled={updating === order.id}
+                              );
+                            }}
+                            disabled={updating === order.order_id}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
                           >
-                            {updating === order.id ? (
-                              <div className="animate-spin rounded-full h-3 w-3 border-b border-white"></div>
+                            {updating === order.order_id ? (
+                              <Loader2 size={14} className="animate-spin" />
                             ) : (
                               <Check size={14} />
                             )}
@@ -503,7 +489,7 @@ const AdminOrdersPage = () => {
           {/* Order Detail */}
           <div className="lg:col-span-1">
             {selectedOrder ? (
-              <div className="bg-white rounded-lg shadow-sm">
+              <div className="bg-white rounded-lg shadow-sm sticky top-6">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900">
@@ -518,7 +504,8 @@ const AdminOrdersPage = () => {
                   </div>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                  {/* Customer Info */}
                   <div>
                     <h3 className="font-medium text-gray-900 mb-2">
                       ข้อมูลลูกค้า
@@ -526,19 +513,15 @@ const AdminOrdersPage = () => {
                     <div className="text-sm space-y-1">
                       <p>
                         <span className="text-gray-600">หมายเลข:</span> #
-                        {selectedOrder.order_number}
+                        {selectedOrder.order_id}
                       </p>
                       <p>
                         <span className="text-gray-600">ชื่อ:</span>{" "}
-                        {selectedOrder.first_name} {selectedOrder.last_name}
+                        {selectedOrder.customer_name}
                       </p>
                       <p>
-                        <span className="text-gray-600">ชื่อเล่น:</span>{" "}
-                        {selectedOrder.nickname}
-                      </p>
-                      <p>
-                        <span className="text-gray-600">ชั้น:</span>{" "}
-                        {selectedOrder.grade}
+                        <span className="text-gray-600">ข้อมูลติดต่อ:</span>{" "}
+                        {selectedOrder.customer_contact}
                       </p>
                       <p>
                         <span className="text-gray-600">วันที่สั่ง:</span>{" "}
@@ -551,125 +534,122 @@ const AdminOrdersPage = () => {
                     </div>
                   </div>
 
+                  {/* Items List */}
                   <div>
                     <h3 className="font-medium text-gray-900 mb-3">
-                      รายการสินค้า
+                      รายการสินค้า ({selectedOrder.items.length})
                     </h3>
                     <div className="space-y-3">
-                      {selectedOrder.items?.map((item) => (
+                      {/* 🟨 FIX 2: เปลี่ยน key={item.id} เป็น key ที่ unique */}
+                      {selectedOrder.items?.map((item, index) => (
                         <div
-                          key={item.cart_id}
-                          className="bg-white p-3 rounded-lg border border-gray-200"
+                          key={`${item.product_id}-${item.product_option}-${index}`} // (ใช้ key ที่ unique ภายใน list)
+                          className="bg-gray-50 p-3 rounded-lg border border-gray-200"
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-medium text-black">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-medium text-gray-900">
                               {item.product_name}
-                            </h3>
+                            </h4>
+                            <p className="font-bold text-gray-900">
+                              ฿
+                              {formatPrice(
+                                item.item_price * item.quantity
+                              )}
+                            </p>
                           </div>
-
-                          {/* Display for bouquets */}
-                          {item.bouquet_details &&
-                          item.bouquet_details.length > 0 ? (
-                            <div className="text-sm text-gray-600 mb-2">
-                              <p className="mb-1">
-                                ประเภท: {item.product_name}
-                              </p>
-                              <p className="mb-1">ดอกไม้:</p>
-                              <ul className="list-disc list-inside ml-2">
-                                {item.bouquet_details.map((flower, idx) => (
-                                  <li key={idx}>
-                                    {flower.flower_name} x {flower.quantity}
-                                    {/* Conditional rendering for flower color */}
-                                    {item.product_name === "ช่อลิลลี่" && (
-                                      <span className="text-gray-500">
-                                        {" "}
-                                        ({flower.flower_color})
-                                      </span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                              <p className="text-sm text-gray-600 ">
-                                โทนสี: {item.color || "ไม่ระบุ"}
-                              </p>
-                              <p className="text-sm text-gray-600 ">
-                                กระดาษห่อ: {item.wrapping || "ไม่ระบุ"}
-                              </p>
-                              <p className="text-sm text-gray-600 ">
-                                ค่าจัดช่อ:{" "}
-                                {formatPrice(
-                                  item.price -
-                                    (item.bouquet_details?.reduce(
-                                      (sum, f) =>
-                                        sum + f.flower_price * f.quantity,
-                                      0
-                                    ) || 0)
-                                )}{" "}
-                                บาท
-                              </p>
-                            </div>
-                          ) : (
-                            // Display for single flowers
-                            <>
-                              <p className="text-sm text-gray-600 mb-1">
-                                ราคาดอก: ฿{formatPrice(item.price)}
-                              </p>
-                              <p className="text-sm text-gray-600 mb-1">
-                                สี: {item.color || "ไม่ระบุ"}
-                              </p>
-                              <p className="text-sm text-gray-600 mb-2">
-                                จำนวน: {item.wrapping}
-                              </p>
-                            </>
-                          )}
-                          <p className="font-bold text-black">
-                            ฿{formatPrice(item.price)}
+                          <p className="text-sm text-gray-600">
+                            {item.quantity} x ฿{formatPrice(item.item_price)}
                           </p>
+                          {item.product_option && (
+                            <p className="text-sm text-gray-600">
+                              ตัวเลือก: {item.product_option}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
                     <div className="mt-4 pt-3 border-t border-gray-200">
-                      <p className="font-semibold">
+                      <p className="text-lg font-semibold text-right">
                         ยอดรวม: ฿{formatPrice(selectedOrder.total_price)}
                       </p>
                     </div>
                   </div>
 
+                  {/* Slip Image */}
                   {selectedOrder.slip_image_url && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-3">
                         สลิปการโอนเงิน
                       </h3>
                       <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <Image
-                          src={selectedOrder.slip_image_url}
-                          alt="Payment slip"
-                          width={150}
-                          height={150}
-                          className="w-full h-auto"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "/placeholder-slip.png";
-                          }}
-                        />
+                        <a
+                          href={selectedOrder.slip_image_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {/* 🟨 FIX 3: เปลี่ยน <Image> เป็น <img> */}
+                          <Image
+                            src={selectedOrder.slip_image_url}
+                            alt="Payment slip"
+                            width={400}
+                            height={600}
+                            className="w-full h-auto object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "https://placehold.co/400x600/eee/ccc?text=No+Slip";
+                            }}
+                          />
+                        </a>
                       </div>
                     </div>
                   )}
+                  
+                  {/* Buttons */}
+                  {selectedOrder.status !== "cancelled" &&
+                    selectedOrder.status !== "delivered" && (
+                      <div
+                        className={`${
+                          getNextStatus(selectedOrder.status) ? "" : "pt-4 border-t"
+                        } border-gray-200`}
+                      >
+                        <button
+                          onClick={() =>
+                            updateOrderStatus(selectedOrder.order_id, "cancelled")
+                          }
+                          disabled={updating === selectedOrder.order_id}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {updating === selectedOrder.order_id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <X size={16} />
+                          )}
+                          ยกเลิกออเดอร์
+                        </button>
+                      </div>
+                    )}
 
                   {getNextStatus(selectedOrder.status) && (
-                    <div className="pt-4 border-t border-gray-200">
+                    <div
+                      className={`${
+                        selectedOrder.status === "cancelled" ||
+                        selectedOrder.status === "delivered"
+                          ? "pt-4 border-t"
+                          : ""
+                      } border-gray-200`}
+                    >
                       <button
                         onClick={() =>
                           updateOrderStatus(
-                            selectedOrder.id,
+                            selectedOrder.order_id,
                             getNextStatus(selectedOrder.status)!
                           )
                         }
-                        disabled={updating === selectedOrder.id}
+                        disabled={updating === selectedOrder.order_id}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {updating === selectedOrder.id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b border-white"></div>
+                        {updating === selectedOrder.order_id ? (
+                          <Loader2 size={16} className="animate-spin" />
                         ) : (
                           <Check size={16} />
                         )}
@@ -680,7 +660,7 @@ const AdminOrdersPage = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm">
+              <div className="bg-white rounded-lg shadow-sm sticky top-6">
                 <div className="p-12 text-center text-gray-500">
                   <Eye size={48} className="mx-auto mb-4 text-gray-300" />
                   <p>เลือกคำสั่งซื้อเพื่อดูรายละเอียด</p>
@@ -695,3 +675,4 @@ const AdminOrdersPage = () => {
 };
 
 export default AdminOrdersPage;
+

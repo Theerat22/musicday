@@ -8,10 +8,11 @@ interface CartItem {
   id: number;
   name: string;
   price: number;
-  image: string;
-  color: string;
-  quantity: number; // เปลี่ยนจาก 'wrapping' เป็น 'quantity'
+  image_url: string;
+  option: string; // ใช้สำหรับระบุไซส์ (เสื้อ) หรือ N/A
+  quantity: number;
   cartId: string;
+  category: "bag" | "keychain" | "shirt" | "other"; 
 }
 
 interface OrderFormData {
@@ -75,6 +76,7 @@ export default function OrderForm({
       !formData.lastName ||
       !formData.nickname ||
       !formData.grade ||
+      !formData.number ||
       !formData.slipImage
     ) {
       alert("กรุณากรอกข้อมูลให้ครบถ้วน");
@@ -82,12 +84,15 @@ export default function OrderForm({
     }
 
     setIsSubmitting(true);
+    console.log(formData)
+    console.log(cart)
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("firstName", formData.firstName);
       formDataToSend.append("lastName", formData.lastName);
       formDataToSend.append("nickname", formData.nickname);
       formDataToSend.append("grade", formData.grade);
+      formDataToSend.append("number", formData.number);
       formDataToSend.append("slipImage", formData.slipImage);
       formDataToSend.append("cart", JSON.stringify(cart));
       formDataToSend.append("totalPrice", totalPrice.toString());
@@ -104,31 +109,31 @@ export default function OrderForm({
         console.log("Order submitted successfully:", result);
 
 
-        try {
-          const emailResponse = await fetch("/api/send-email", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              nickname: formData.nickname,
-              grade: formData.grade,
-              cart: cart,
-              totalPrice: totalPrice,
-              number: formData.number,
-            }),
-          });
+        // try {
+        //   const emailResponse = await fetch("/api/send-email", {
+        //     method: "POST",
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //     },
+        //     body: JSON.stringify({
+        //       firstName: formData.firstName,
+        //       lastName: formData.lastName,
+        //       nickname: formData.nickname,
+        //       grade: formData.grade,
+        //       cart: cart,
+        //       totalPrice: totalPrice,
+        //       number: formData.number,
+        //     }),
+        //   });
 
-          if (emailResponse.ok) {
-            console.log("Email sent successfully!");
-          } else {
-            console.error("Failed to send email.");
-          }
-        } catch (emailError) {
-          console.error("Error sending email:", emailError);
-        }
+        //   if (emailResponse.ok) {
+        //     console.log("Email sent successfully!");
+        //   } else {
+        //     console.error("Failed to send email.");
+        //   }
+        // } catch (emailError) {
+        //   console.error("Error sending email:", emailError);
+        // }
 
         setFormData({
           firstName: "",
@@ -171,11 +176,9 @@ export default function OrderForm({
       if (data.qrCodeDataUrl) {
         setQrCodeUrl(data.qrCodeDataUrl);
       } else {
-        // alert(data.error || "เกิดข้อผิดพลาด");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("เกิดข้อผิดพลาดในการสร้าง QR Code");
     } finally {
       setIsGeneratingQR(false);
     }
@@ -261,11 +264,11 @@ export default function OrderForm({
             <>
               {QRCodeDisplay}
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 text-start">
+                <div className="grid grid-cols-2 gap-4 text-start">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ชื่อ *
+                      ชื่อ <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -279,7 +282,7 @@ export default function OrderForm({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      นามสกุล *
+                      นามสกุล <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -294,8 +297,8 @@ export default function OrderForm({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ชื่อเล่น *
+                  <label className="block text-sm text-start font-medium text-gray-700 mb-2">
+                    ชื่อเล่น <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -311,7 +314,7 @@ export default function OrderForm({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ชั้น *
+                      ชั้น <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -320,13 +323,13 @@ export default function OrderForm({
                         handleFormChange("grade", e.target.value)
                       }
                       className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-                      placeholder="เช่น 4/1"
+                      placeholder="เช่น 6/1 (ไม่มีให้ -)"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      เลขประจำตัว (4 หลัก) *
+                      เลขประจำตัว (4 หลัก)  <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -335,14 +338,14 @@ export default function OrderForm({
                         handleFormChange("number", e.target.value)
                       }
                       className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-                      placeholder="เช่น 5830"
+                      placeholder="เช่น 5830 (ไม่มีให้ -)"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    อัปโหลดสลิปการโอนเงิน *
+                    อัปโหลดสลิปการโอนเงิน <span className="text-red-500">*</span>
                   </label>
                   {formData.slipImage ? (
                     <div className="relative border-2 border-solid border-gray-300 rounded-lg overflow-hidden">

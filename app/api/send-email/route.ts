@@ -19,7 +19,6 @@ export async function POST(req: Request) {
   // อ่านข้อมูลจาก body ของ request โดยใช้ await req.json()
   const { firstName, lastName, nickname, grade, cart, totalPrice, number } = await req.json();
 
-  // ตรวจสอบข้อมูลที่จำเป็น
   if (!nickname || !firstName || !cart || totalPrice === undefined || !number) {
     return NextResponse.json({ message: 'Missing required data' }, { status: 400 });
   }

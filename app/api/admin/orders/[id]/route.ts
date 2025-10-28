@@ -1,48 +1,80 @@
-// app/api/admin/orders/[id]/route.ts
-
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { mysqlPool } from "@/utils/db";
-import { ResultSetHeader } from "mysql2";
+import type { ResultSetHeader, PoolConnection } from "mysql2/promise";
 
-type OrderStatus = "pending" | "confirmed" | "completed" | "delivered" | "cancelled";
+type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "delivered"
+  | "cancelled";
+
+// รายการสถานะที่อนุญาตให้อัปเดต
+const ALLOWED_STATUSES: OrderStatus[] = [
+  "pending",
+  "confirmed",
+  "completed",
+  "delivered",
+  "cancelled",
+];
 
 export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: { id: string } } // "id" ในที่นี้คือ order_id (string "MD...")
 ) {
-  try {
-    const { status } = (await request.json()) as { status: OrderStatus };
-    const { id: orderId } = await context.params;
+  const { id: orderId } = params; // เปลี่ยนชื่อตัวแปรเพื่อความชัดเจน
+  let connection: PoolConnection | undefined;
 
-    const validStatuses: OrderStatus[] = [
-      "pending",
-      "confirmed",
-      "completed",
-      "delivered",
-      "cancelled",
-    ];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  try {
+    const { status } = (await req.json()) as { status: OrderStatus };
+
+    // Validation 1: ตรวจสอบ Status ที่ส่งมา
+    if (!status || !ALLOWED_STATUSES.includes(status)) {
+      return NextResponse.json(
+        { error: "Invalid status provided" },
+        { status: 400 }
+      );
     }
 
-    const [result] = await mysqlPool.query<ResultSetHeader>(
-      "UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [status, orderId]
+    // Validation 2: (ลบการตรวจสอบ parseInt)
+    // 'orderId' คือ string (เช่น "MD...") ที่มาจาก URL
+    if (!orderId) {
+      return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
+    }
+
+    connection = await mysqlPool.getConnection();
+    
+    // --- 🟨 FIX ---
+    // เปลี่ยน WHERE id = ? (ตัวเลข)
+    // เป็น WHERE order_id = ? (ข้อความ)
+    const [result] = await connection.execute<ResultSetHeader>(
+      "UPDATE orders SET order_status = ? WHERE order_id = ?",
+      [status, orderId] // ใช้ orderId (string)
     );
 
     if (result.affectedRows === 0) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      // ไม่พบ Order ID นี้ในระบบ
+      return NextResponse.json(
+        { error: "Order not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({
-      message: "Order status updated successfully",
-      status: status,
+      success: true,
+      message: `Order ${orderId} updated to ${status}`, // ใช้ orderId (string)
     });
   } catch (error) {
-    console.error("Database error:", error);
+    console.error("Failed to update order status:", error);
     return NextResponse.json(
       { error: "Failed to update order status" },
       { status: 500 }
     );
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 }
+

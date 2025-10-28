@@ -1,125 +1,128 @@
-// app/api/admin/orders/route.ts
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/utils/db";
-import { RowDataPacket } from "mysql2";
+import type { RowDataPacket, PoolConnection } from "mysql2/promise";
 
-// กำหนด Interface สำหรับข้อมูลที่ดึงจากตาราง order_bouquet_items
-interface BouquetItem extends RowDataPacket {
-  order_item_cart_id: string;
-  flower_id: number;
-  flower_name: string;
-  flower_color: string;
-  flower_price: number;
-  quantity: number;
+// Interface ที่ใช้ใน Backend (ตรงกับที่ SELECT มา)
+interface OrderRow extends RowDataPacket {
+  order_id: string; // "MD..."
+  customer_name: string;
+  customer_contact: string;
+  total_price: number; // (aliased from total_amount)
+  slip_image_url: string | null;
+  order_date: string;
+  status: OrderStatus; // (aliased from order_status)
+
+  product_id: number | null;
+  product_name: string | null;
+  item_price: number | null;
+  quantity: number | null;
+  product_option: string | null;
 }
 
-// กำหนด Interface สำหรับข้อมูลที่ดึงจากตาราง order_items
-interface OrderItemDB extends RowDataPacket {
-  order_id: number;
-  id: number;
+// Interface ที่จะส่งกลับ (Frontend)
+type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "delivered"
+  | "cancelled";
+
+// --- 🟨 FIX: ลบ id ---
+interface OrderItem {
   product_id: number | null;
   product_name: string;
-  price: number;
-  color: string;
-  wrapping: string;
-  cart_id: string;
+  item_price: number;
+  quantity: number;
+  product_option: string | null;
 }
 
-// กำหนด Interface สำหรับข้อมูลที่ดึงจากตาราง orders
-interface OrderDB extends RowDataPacket {
-  id: number;
-  order_number: string;
-  first_name: string;
-  last_name: string;
-  nickname: string;
-  grade: string;
+interface Order {
+  order_id: string; // "MD..."
+  customer_name: string;
+  customer_contact: string;
   total_price: number;
   slip_image_url: string | null;
   order_date: string;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
-  created_at: string;
-  updated_at: string;
+  status: OrderStatus;
+  items: OrderItem[];
 }
 
 export async function GET() {
+  let connection: PoolConnection | undefined;
   try {
-    const [ordersResult] = await mysqlPool.query<OrderDB[]>(`
+    connection = await mysqlPool.getConnection();
+    
+    // --- 🟨 FIX: ลบ oi.id as item_id ออกจาก SELECT ---
+    const [rows] = await connection.query<OrderRow[]>(`
       SELECT 
-        id, 
-        order_number, 
-        first_name, 
-        last_name, 
-        nickname, 
-        grade, 
-        total_price, 
-        slip_image_url, 
-        order_date, 
-        status, 
-        created_at, 
-        updated_at
-      FROM orders
-      ORDER BY order_date DESC
+        o.order_id, 
+        o.customer_name, 
+        o.customer_contact,
+        o.total_amount as total_price,
+        o.slip_image_url,
+        o.order_date,
+        o.order_status as status,
+        
+        oi.product_id,
+        oi.product_name,
+        oi.item_price,
+        oi.quantity,
+        oi.product_option
+      FROM orders o
+      LEFT JOIN order_items oi ON o.order_id = oi.order_id
+      ORDER BY o.order_date DESC;
     `);
 
-    const [itemsResult] = await mysqlPool.query<OrderItemDB[]>(`
-      SELECT 
-        order_id,
-        id,
-        product_id,
-        product_name,
-        price,
-        color,
-        wrapping,
-        cart_id
-      FROM order_items
-    `);
+    connection.release();
 
-    const [bouquetItemsResult] = await mysqlPool.query<BouquetItem[]>(`
-      SELECT 
-        order_item_cart_id,
-        flower_id,
-        flower_name,
-        flower_color,
-        flower_price,
-        quantity
-      FROM order_bouquet_items
-    `);
+    // --- Logic การจัดกลุ่ม (Grouping) ---
+    const ordersMap = new Map<string, Order>();
 
-    // สร้าง Map เพื่อจัดกลุ่มข้อมูลตาม cart_id เพื่อความเร็วในการค้นหา
-    const bouquetMap = new Map<string, BouquetItem[]>();
-    bouquetItemsResult.forEach(item => {
-      if (!bouquetMap.has(item.order_item_cart_id)) {
-        bouquetMap.set(item.order_item_cart_id, []);
+    for (const row of rows) {
+      // 1. ตรวจสอบว่ามี Order นี้ใน Map หรือยัง (ใช้ order_id)
+      if (!ordersMap.has(row.order_id)) {
+        // 2. ถ้ายังไม่มี ให้สร้าง Order object ใหม่
+        ordersMap.set(row.order_id, {
+          order_id: row.order_id,
+          customer_name: row.customer_name,
+          customer_contact: row.customer_contact,
+          total_price: row.total_price,
+          slip_image_url: row.slip_image_url,
+          order_date: row.order_date,
+          status: row.status,
+          items: [], // เริ่มต้นด้วย items ว่างๆ
+        });
       }
-      bouquetMap.get(item.order_item_cart_id)!.push(item);
-    });
 
-    // สร้าง Map เพื่อจัดกลุ่มรายการสินค้าตาม order_id
-    const itemsMap = new Map<number, OrderItemDB[]>();
-    itemsResult.forEach(item => {
-      // รวมข้อมูล bouquet เข้ากับ item หลัก
-      const bouquetDetails = bouquetMap.get(item.cart_id) || [];
-      const orderItem = { ...item, bouquet_details: bouquetDetails };
-      
-      if (!itemsMap.has(item.order_id)) {
-        itemsMap.set(item.order_id, []);
+      // 3. ดึง Order ที่มีอยู่ออกจาก Map (ใช้ order_id)
+      const currentOrder = ordersMap.get(row.order_id)!;
+
+      // --- 🟨 FIX: ตรวจสอบด้วย product_name (แทน item_id) ---
+      // 4. ตรวจสอบว่าแถวนี้มีข้อมูล item (product_name จะเป็น NULL ถ้า LEFT JOIN ไม่เจอ)
+      if (row.product_name) {
+        currentOrder.items.push({
+          // --- 🟨 FIX: ลบ id ---
+          product_id: row.product_id,
+          product_name: row.product_name,
+          item_price: row.item_price!,
+          quantity: row.quantity!,
+          product_option: row.product_option,
+        });
       }
-      itemsMap.get(item.order_id)!.push(orderItem);
-    });
+    }
 
-    // รวมข้อมูลทั้งหมดเข้าด้วยกัน
-    const ordersWithItems = ordersResult.map(order => {
-      const items = itemsMap.get(order.id) || [];
-      return { ...order, items: items };
-    });
+    // 5. แปลงค่าจาก Map กลับเป็น Array
+    const groupedOrders = Array.from(ordersMap.values());
 
-    return NextResponse.json(ordersWithItems);
+    return NextResponse.json(groupedOrders);
 
   } catch (error) {
-    console.error("Database error:", error);
+    console.error("Failed to fetch orders:", error);
+    if (connection) connection.release();
     return NextResponse.json(
       { error: "Failed to fetch orders" },
       { status: 500 }
     );
   }
 }
+

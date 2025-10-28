@@ -22,6 +22,7 @@ const POSEntry = ({ products, refreshData }: { products: Product[], refreshData:
   const [paymentMethod] = useState<string>("cash");
   const [isProcessing, setIsProcessing] = useState(false);
 
+
   const totalAmount = useMemo(() => {
     return cart.reduce(
       (sum, item) => sum + item.price * item.cart_quantity,
@@ -209,6 +210,7 @@ const POSEntry = ({ products, refreshData }: { products: Product[], refreshData:
             disabled={cart.length === 0 || isProcessing}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
+
             {isProcessing ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b border-white"></div>
             ) : (
