@@ -19,23 +19,43 @@ interface CartItem extends Product {
   cartId: string;
 }
 
-
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedOption, setSelectedOption] = useState(""); // For shirt size
-  const [quantity, setQuantity] = useState(1); // For all products
+  const [selectedOption, setSelectedOption] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const category = [
+    { key: "keychain", label: "พวงกุญแจ" },
+    { key: "sticker", label: "สติกเกอร์" },
+    // { key: "shirt", label: "เสื้อ" },
+  ];
+
+  const keychain = [
+    {
+      title: "นกยูง",
+      image:
+        "https://res.cloudinary.com/dbasoxt2o/image/upload/v1760114658/IMG_7119_ys1sqv.jpg",
+    },
+    {
+      title: "อีกา",
+      image:
+        "https://res.cloudinary.com/dbasoxt2o/image/upload/v1760114658/IMG_7119_ys1sqv.jpg",
+    },
+    {
+      title: "วัว",
+      image:
+        "https://res.cloudinary.com/dbasoxt2o/image/upload/v1760114658/IMG_7119_ys1sqv.jpg",
+    },
+  ];
+
   useEffect(() => {
-    // แก้ไข ESLint Warning โดยการใช้ devProducts ที่เป็นค่าคงที่
     const fetchProducts = async () => {
-      // Simulate fetching products or use a mock data
-      // ในแอปจริง คุณจะ fetch จาก API
       try {
         const response = await fetch("/api/fetchProducts");
         const data = await response.json();
@@ -52,12 +72,14 @@ export default function Products() {
     fetchProducts();
   }, []);
 
-  const shirtSizes = ["S", "M", "L", "XL"];
+  const shirtSizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 
   const handleAddClick = (product: Product) => {
     setSelectedProduct(product);
-    setSelectedOption(product.category === "shirt" ? "" : "N/A"); // Require size selection for shirt
-    setQuantity(1); // Reset quantity
+    setSelectedOption(
+      product.category === "shirt" || product.id === 7 ? "" : "N/A"
+    ); // Require size selection for shirt
+    setQuantity(1);
     setShowModal(true);
   };
 
@@ -68,8 +90,15 @@ export default function Products() {
         return;
       }
 
+      if (selectedProduct.id === 7 && !selectedOption) {
+        alert("กรุณาเลือกลายพวงกุญแจ");
+        return;
+      }
+
       const itemOption =
-        selectedProduct.category === "shirt" ? selectedOption : "N/A";
+        selectedProduct.category === "shirt" || selectedProduct.id === 7
+          ? selectedOption
+          : "N/A";
 
       const cartItem: CartItem = {
         ...selectedProduct,
@@ -123,12 +152,30 @@ export default function Products() {
   return (
     <div className="min-h-screen bg-white p-6 mt-1">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-slate-800 ">
-            สินค้ารุ่น CD56
-          </h1>
-          <div className="w-16 h-1 mt-4 rounded-2xl bg-yellow-400 mx-auto"></div>
+        {/* Header Mobile View */}
+        <div className="flex flex-row mb-7 items-start lg:hidden">
+          <div className="h-16 w-1 bg-yellow-400"></div>
+          <div className="text-start ml-3">
+            <h1 className="text-slate-900 font-bold text-2xl ">
+              CD56 Products
+            </h1>
+            <p className="text-gray-600 mt-1 text-lg">
+              ผลิตภัณฑ์จากนักเรียนจิตรลดารุ่น 56
+            </p>
+          </div>
+        </div>
+
+        {/* Header Laptop View */}
+        <div className="hidden flex-col justify-center items-center text-center mb-7 lg:block">
+          <div className="text-center ml-3 mb-3.5">
+            <h1 className="text-slate-900 font-bold text-3xl ">
+              CD56 Products
+            </h1>
+            <p className="text-gray-600 mt-1 text-lg">
+              ผลิตภัณฑ์จากนักเรียนจิตรลดารุ่น 56
+            </p>
+          </div>
+          <div className="w-32 h-1 bg-yellow-400 mx-auto"></div>
         </div>
 
         <OrderForm
@@ -141,7 +188,6 @@ export default function Products() {
 
         {showCart && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-end z-50">
-            {/* ปรับปรุงคลาสตรงนี้ */}
             <div className="bg-white w-full sm:max-w-xs md:max-w-md lg:max-w-lg h-full overflow-y-auto shadow-2xl">
               <div className="p-6 border-b bg-gray-50">
                 <div className="flex justify-between items-center">
@@ -188,6 +234,11 @@ export default function Products() {
                               ไซส์: {item.option}
                             </p>
                           )}
+                          {item.id === 7 && (
+                            <p className="text-sm text-gray-600 mb-1">
+                              ลาย: {item.option}
+                            </p>
+                          )}
                           <p className="text-sm text-gray-600 mb-2">
                             จำนวน: {item.quantity}
                           </p>
@@ -221,45 +272,56 @@ export default function Products() {
         )}
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm"
-            >
-              {/* Product Image */}
-              <div className="aspect-square bg-gray-50 flex items-center justify-center p-4">
-                <Image
-                  src={product.image_url}
-                  alt={product.name}
-                  width={300}
-                  height={300}
-                  className="object-cover w-full h-full rounded-md"
-                />
-              </div>
 
-              {/* Product Info */}
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-slate-800 mb-2">
-                  {product.name}
-                </h3>
+        {category.map((category) => (
+          <div key={category.key} className="mb-8">
+            <h2 className="text-xl font-bold text-start text-blue-900 mb-4 ml-1 lg:text-2xl">
+              {category.label}
+            </h2>
 
-                {/* Price */}
-                <div className="text-xl font-light text-slate-700 mb-4">
-                  {product.price}฿
-                </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {products
+                .filter((product) => product.category === category.key)
+                .map((product) => (
+                  <div
+                    key={product.id}
+                    className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm"
+                  >
+                    {/* Product Image */}
+                    <div className="aspect-square bg-gray-50 flex items-center justify-center p-2 sm:p-4">
+                      {/* ปรับ Padding ของ Image Box */}
+                      <Image
+                        src={product.image_url}
+                        alt={product.name}
+                        width={300}
+                        height={300}
+                        className="object-cover w-full h-full rounded-md"
+                      />
+                    </div>
 
-                {/* Button */}
-                <button
-                  className="w-full bg-blue-900 text-white py-3 px-4 rounded-md font-bold hover:bg-blue-800 transition-colors"
-                  onClick={() => handleAddClick(product)}
-                >
-                  เพิ่ม
-                </button>
-              </div>
+                    {/* Product Info */}
+                    <div className="p-4 md:p-6">
+                      <h3 className="text-base sm:text-lg font-medium text-slate-800 mb-2">
+                        {product.name}
+                      </h3>
+
+                      <div className="text-lg sm:text-xl font-light text-slate-700 mb-3 md:mb-4">
+                        {product.price}฿
+                      </div>
+
+                      {/* Button */}
+                      <button
+                        className="w-full bg-blue-900 text-white py-2 md:py-3 px-4 rounded-md font-bold text-sm md:text-base hover:bg-blue-800 transition-colors"
+                        onClick={() => handleAddClick(product)}
+                      >
+                        เพิ่ม
+                      </button>
+                    </div>
+                  </div>
+                ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* Cart Button */}
@@ -279,7 +341,7 @@ export default function Products() {
 
       {/* Product Options Modal */}
       {showModal && selectedProduct && (
-        <section className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-40">
+        <section className="fixed inset-0 z-50 overflow-y-auto bg-white bg-opacity-10">
           <div className="min-h-full flex items-start justify-center p-4 py-12">
             <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl border border-gray-200 relative my-8">
               {/* Close Button */}
@@ -337,6 +399,54 @@ export default function Products() {
                   </div>
                 )}
 
+                {selectedProduct.id === 7 && (
+                  <div className="mb-8">
+                    <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
+                      ลายที่ต้องการ
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {keychain.map((item) => (
+                        <label
+                          key={item.title}
+                          className={`flex flex-col items-center justify-center p-2 sm:p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 text-center 
+                          ${
+                            selectedOption === item.title
+                              ? "border-black bg-gray-50 ring-2 ring-black font-bold"
+                              : "border-gray-200"
+                          }`}
+                        >
+                          <div className="w-full aspect-square mb-2">
+                            <Image
+                              src={item.image}
+                              alt={`Size ${item.title} preview`}
+                              width={80}
+                              height={80}
+                              className="object-cover w-full h-full rounded-md border border-gray-100"
+                            />
+                          </div>
+
+                          <input
+                            type="radio"
+                            name="size"
+                            value={item.title}
+                            checked={selectedOption === item.title}
+                            onChange={(e) => setSelectedOption(e.target.value)}
+                            className="sr-only"
+                          />
+
+                          <span className="text-slate-700 text-sm sm:text-base font-semibold">
+                            {item.title}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {/* Error message for shirt size */}
+                    {!selectedOption && (
+                      <p className="text-red-500 text-sm mt-2">กรุณาเลือกลาย</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Quantity Selection (for all products) */}
                 <div className="mb-8">
                   <h4 className="text-lg font-medium text-black mb-4 tracking-wide">
@@ -370,9 +480,10 @@ export default function Products() {
                 {/* Action Button */}
                 <button
                   onClick={handleAddToCart}
-                  // Disable if it's a shirt and no size is selected
                   disabled={
-                    selectedProduct.category === "shirt" && !selectedOption
+                    (selectedProduct.category === "shirt" ||
+                      selectedProduct.id === 7) &&
+                    !selectedOption
                   }
                   className="w-full bg-black text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
